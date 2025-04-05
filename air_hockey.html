@@ -3,33 +3,1184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2D Аерохокей v11 - Покращений ШІ (Передбачення та Прицілювання)</title>
+    <title>2D Аерохокей v17 - Графіка + Просунутий ШІ + Автоприховування</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <style>
-        /* Стилі залишаються ті ж самі */
-        body { display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; margin: 0; background-color: #333; flex-direction: column; font-family: sans-serif; -webkit-user-select: none; -ms-user-select: none; user-select: none; overflow: hidden; color: white; }
-        canvas { border: 2px solid #aaa; display: block; cursor: grab; touch-action: none; max-width: 100%; max-height: 100%; box-sizing: border-box; }
-        canvas.grabbing { cursor: grabbing; }
-        .controls { position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(0, 0, 0, 0.6); padding: 8px; border-radius: 5px; font-size: 0.9em; display: flex; gap: 15px; align-items: center; }
-        .control-group label { margin-right: 5px; }
-        #speedValue { font-weight: bold; }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            margin: 0;
+            background-color: #222;
+            flex-direction: column;
+            font-family: sans-serif;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            overflow: hidden;
+            color: white;
+        }
+        canvas {
+            border: 2px solid #aaa;
+            display: block;
+            cursor: grab;
+            touch-action: none;
+            max-width: 100%;
+            max-height: 100%;
+            box-sizing: border-box;
+        }
+        canvas.grabbing {
+            cursor: grabbing;
+        }
+        .controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            /* Стилі для автоприховування */
+            transition: opacity 0.5s ease-in-out; /* Плавність появи/зникнення */
+            opacity: 1; /* Початково видимі */
+            pointer-events: auto; /* Початково можна взаємодіяти */
+        }
+        .controls.hidden {
+            opacity: 0; /* Робимо невидимими */
+            pointer-events: none; /* Забороняємо взаємодію, коли приховані */
+        }
+        .control-group label {
+            margin-right: 5px;
+            white-space: nowrap;
+        }
+        #speedValue, #puckSpeedValue, #gripValue {
+            font-weight: bold;
+        }
+        @media (max-width: 550px) {
+            .controls {
+                gap: 8px;
+            }
+            .control-group input[type=range] {
+                width: 60px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="controls">
         <div class="control-group">
             <label for="difficulty">Складність:</label>
-            <select id="difficulty"> <option value="easy">Легка</option> <option value="medium" selected>Середня</option> <option value="hard">Важка</option> </select>
+            <select id="difficulty">
+                <option value="easy">Легка</option>
+                <option value="medium" selected>Середня</option>
+                <option value="hard">Важка</option>
+            </select>
         </div>
         <div class="control-group">
              <label for="aiSpeed">Шв. ШІ: <span id="speedValue">1.0</span>x</label>
              <input type="range" id="aiSpeed" min="0.2" max="2.5" value="1.0" step="0.1" style="width: 80px;">
         </div>
+        <div class="control-group">
+             <label for="puckSpeedSlider">Макс. шв. шайби: <span id="puckSpeedValue">15</span></label>
+             <input type="range" id="puckSpeedSlider" min="5" max="35" value="15" step="1" style="width: 80px;">
+        </div>
+         <div class="control-group">
+             <label for="gripSlider">Зачепл.: <span id="gripValue">0.5</span></label>
+             <input type="range" id="gripSlider" min="0.0" max="0.8" value="0.5" step="0.01" style="width: 80px;">
+        </div>
+        <!-- НОВИЙ СЛАЙДЕР -->
+        <div class="control-group">
+            <label for="bounceSlider">Відск. ключ.: <span id="bounceValue">0.80</span></label>
+            <input type="range" id="bounceSlider" min="0.4" max="0.95" value="0.8" step="0.01" style="width: 80px;">
+        </div>
     </div>
 
     <script>
-const _0x357bf8=_0x3ad6;(function(_0x3bc982,_0x5c0217){const _0x1a20cc=_0x3ad6,_0x5c538f=_0x3bc982();while(!![]){try{const _0x54ed8b=-parseInt(_0x1a20cc(0x12c))/0x1+parseInt(_0x1a20cc(0x139))/0x2+parseInt(_0x1a20cc(0x15a))/0x3+parseInt(_0x1a20cc(0x155))/0x4+-parseInt(_0x1a20cc(0x13a))/0x5*(-parseInt(_0x1a20cc(0x12a))/0x6)+-parseInt(_0x1a20cc(0x152))/0x7+parseInt(_0x1a20cc(0x158))/0x8*(parseInt(_0x1a20cc(0x157))/0x9);if(_0x54ed8b===_0x5c0217)break;else _0x5c538f['push'](_0x5c538f['shift']());}catch(_0x2ccde7){_0x5c538f['push'](_0x5c538f['shift']());}}}(_0x10d8,0x66b4f));let canvasElement,isPortrait=![];function _0x3ad6(_0x5f401f,_0x3a397d){const _0x10d8c0=_0x10d8();return _0x3ad6=function(_0x3ad6e3,_0x400b2c){_0x3ad6e3=_0x3ad6e3-0x127;let _0x215637=_0x10d8c0[_0x3ad6e3];return _0x215637;},_0x3ad6(_0x5f401f,_0x3a397d);}const padding=0xa,playerColor=[0x0,0x0,0xff],aiColor=[0xff,0x0,0x0],puckColor=[0xff,0xff,0xff],fieldColor=[0x32,0x32,0x32],scoreColor=[0xc8,0xc8,0xc8,0x64];let paddleRadius,puckRadius,goalWidth;const friction=0.995,maxPuckSpeed=0x19,hitForceMultiplier=0.25,wallRestitution=-0.95;let player,ai,puck,playerScore=0x0,aiScore=0x0,difficulty=_0x357bf8(0x156),isDragging=![],aiGlobalSpeedMultiplier=0x1,aiBasePos,aiDefensiveLine,aiCriticalDefenseLine,aiOffensivePush;const aiAimAssist=0.1;let cornerCheckRadius;const wallAvoidanceDistance=0x32,wallAvoidanceForce=0.2;let scaledWallAvoidDistance;const STUCK_THRESHOLD_FRAMES=0x2d,STUCK_ESCAPE_FORCE=0x6,AI_PREDICTION_FRAMES_MIN=0x8,AI_PREDICTION_FRAMES_MAX=0x19,AI_DEFENSE_CLEAR_BIAS=0.25,AI_OFFENSIVE_AIM_THRESH=1.5,AI_CRITICAL_CLEAR_STRENGTH=0x1;function setup(){const _0x2f4e31=_0x357bf8;let _0x45ab0f=calculateCanvasSize();canvasElement=createCanvas(_0x45ab0f['w'],_0x45ab0f['h']),canvasElement[_0x2f4e31(0x148)](document['body']),isPortrait=_0x45ab0f[_0x2f4e31(0x161)],resetLayout(),textAlign(CENTER,CENTER),noStroke(),setupEventListeners();}function calculateCanvasSize(){let _0x5405a0=windowWidth-padding*0x2,_0x6678ad=windowHeight-padding*0x2-0x32;_0x6678ad=max(_0x6678ad,0xc8);let _0xc8152c=_0x6678ad>_0x5405a0;return{'w':floor(_0x5405a0),'h':floor(_0x6678ad),'portrait':_0xc8152c};}function resetLayout(){const _0x10827b=_0x357bf8;console[_0x10827b(0x12d)](_0x10827b(0x167)+width+_0x10827b(0x164)+height+',\x20Portrait:\x20'+isPortrait);let _0x188e3c=min(width,height);paddleRadius=max(0x19,_0x188e3c*0.05),puckRadius=max(0x8,_0x188e3c*0.03),goalWidth=_0x188e3c*0.3,aiOffensivePush=paddleRadius*0.7,cornerCheckRadius=paddleRadius*1.8,scaledWallAvoidDistance=_0x188e3c*0.13,isPortrait?(aiBasePos={'x':width/0x2,'y':height*0.25},aiDefensiveLine=height*0.4,aiCriticalDefenseLine=height*0.18,player={'x':width/0x2,'y':height*0.75,'r':paddleRadius,'color':playerColor,'prevX':width/0x2,'prevY':height*0.75,'velX':0x0,'velY':0x0},ai={'x':aiBasePos['x'],'y':aiBasePos['y'],'r':paddleRadius,'color':aiColor,'prevX':aiBasePos['x'],'prevY':aiBasePos['y'],'velX':0x0,'velY':0x0,'stuckInCornerTimer':0x0,'lastPuckPosInCorner':{'x':-0x1,'y':-0x1},'isStuckEscaping':![]},puck={'x':width/0x2,'y':height/0x2,'r':puckRadius,'vx':0x0,'vy':random(-0x2,0x2),'color':puckColor}):(aiBasePos={'x':width*0.75,'y':height/0x2},aiDefensiveLine=width*0.6,aiCriticalDefenseLine=width*0.82,player={'x':width*0.25,'y':height/0x2,'r':paddleRadius,'color':playerColor,'prevX':width*0.25,'prevY':height/0x2,'velX':0x0,'velY':0x0},ai={'x':aiBasePos['x'],'y':aiBasePos['y'],'r':paddleRadius,'color':aiColor,'prevX':aiBasePos['x'],'prevY':aiBasePos['y'],'velX':0x0,'velY':0x0,'stuckInCornerTimer':0x0,'lastPuckPosInCorner':{'x':-0x1,'y':-0x1},'isStuckEscaping':![]},puck={'x':width/0x2,'y':height/0x2,'r':puckRadius,'vx':random(-0x2,0x2),'vy':0x0,'color':puckColor}),isDragging=![],canvasElement&&canvasElement[_0x10827b(0x133)]('grabbing');}function windowResized(){const _0x419d6e=_0x357bf8;let _0x1e8aa2=calculateCanvasSize();resizeCanvas(_0x1e8aa2['w'],_0x1e8aa2['h']),_0x1e8aa2[_0x419d6e(0x161)]!==isPortrait?(isPortrait=_0x1e8aa2[_0x419d6e(0x161)],resetLayout()):resetLayout();}function setupEventListeners(){const _0x531da2=_0x357bf8,_0x269917=document['getElementById']('difficulty');_0x269917[_0x531da2(0x160)](_0x531da2(0x13e),_0x3f6a02=>{const _0x1f78c4=_0x531da2;difficulty=_0x3f6a02['target'][_0x1f78c4(0x12b)],console[_0x1f78c4(0x12d)](_0x1f78c4(0x14d),difficulty);}),difficulty=_0x269917[_0x531da2(0x12b)];const _0x3ba205=document[_0x531da2(0x153)](_0x531da2(0x135)),_0x415f23=document[_0x531da2(0x153)](_0x531da2(0x138));_0x3ba205[_0x531da2(0x160)]('input',_0x1a1612=>{const _0x1950f6=_0x531da2;aiGlobalSpeedMultiplier=parseFloat(_0x1a1612[_0x1950f6(0x14e)][_0x1950f6(0x12b)]),_0x415f23[_0x1950f6(0x140)]=aiGlobalSpeedMultiplier['toFixed'](0x1);}),aiGlobalSpeedMultiplier=parseFloat(_0x3ba205[_0x531da2(0x12b)]),_0x415f23[_0x531da2(0x140)]=aiGlobalSpeedMultiplier[_0x531da2(0x14c)](0x1),canvasElement[_0x531da2(0x134)]['addEventListener'](_0x531da2(0x150),handleTouchStart,{'passive':![]}),canvasElement[_0x531da2(0x134)][_0x531da2(0x160)](_0x531da2(0x128),handleTouchMove,{'passive':![]}),canvasElement[_0x531da2(0x134)][_0x531da2(0x160)](_0x531da2(0x166),handleTouchEnd),canvasElement[_0x531da2(0x134)][_0x531da2(0x160)]('touchcancel',handleTouchEnd),canvasElement[_0x531da2(0x130)](handleMousePressed),canvasElement[_0x531da2(0x12f)](handleMouseDragged),canvasElement[_0x531da2(0x151)](handleMouseReleased);}function handleTouchStart(_0x600127){const _0x5eb049=_0x357bf8;if(_0x600127[_0x5eb049(0x143)]['length']>0x0){let _0x6b36ce=_0x600127[_0x5eb049(0x143)][0x0],_0x5295da=canvasElement['elt'][_0x5eb049(0x154)](),_0x402491=_0x6b36ce[_0x5eb049(0x127)]-_0x5295da[_0x5eb049(0x145)],_0x2ddd25=_0x6b36ce[_0x5eb049(0x162)]-_0x5295da['top'];checkPaddleGrab(_0x402491,_0x2ddd25);}}function handleTouchMove(_0x17d9d4){const _0x3af060=_0x357bf8;if(isDragging&&_0x17d9d4[_0x3af060(0x143)][_0x3af060(0x13f)]>0x0){_0x17d9d4[_0x3af060(0x146)]();let _0x2b623c=_0x17d9d4[_0x3af060(0x143)][0x0],_0x20fe50=canvasElement['elt']['getBoundingClientRect'](),_0x4c239b=_0x2b623c[_0x3af060(0x127)]-_0x20fe50[_0x3af060(0x145)],_0x1d339f=_0x2b623c[_0x3af060(0x162)]-_0x20fe50['top'];updatePlayerPosition(_0x4c239b,_0x1d339f);}}function handleTouchEnd(_0x93b4dc){isDragging&&releasePaddleGrab();}function handleMousePressed(){checkPaddleGrab(mouseX,mouseY);}function _0x10d8(){const _0x2c3abf=['AI\x20State:\x20!!!\x20CRITICAL\x20DEFENSE\x20!!!','Player\x20scores!','touches','isStuckEscaping','left','preventDefault','velY','parent','color','hard','\x20-\x20','toFixed','Difficulty\x20changed\x20to:','target','AI\x20State:\x20STUCK\x20ESCAPE\x20MOVE!','touchstart','mouseReleased','4484536pCgSAx','getElementById','getBoundingClientRect','732828QQEeLM','medium','202932ZdfQMI','248LSwkxm','AI\x20State:\x20!!!\x20DESPERATION\x20SAVE\x20!!!\x20(Puck\x20Behind)','201237UUEArW','lastPuckPosInCorner','AI\x20State:\x20DEFENSE\x20(Intercept\x20&\x20Clear)','Edge\x20Hit\x20Detected!','Раунд\x20скинуто.\x20Рахунок:','prevY','addEventListener','portrait','clientY','Corner\x20Timer:\x20',',\x20Height:\x20','stuckInCornerTimer','touchend','Resetting\x20layout.\x20Width:\x20','clientX','touchmove','addClass','761628qzTnfs','value','443969tQIBVJ','log','AI\x20State:\x20NUDGING\x20SLOW\x20PUCK\x20(Near\x20Edge)','mouseMoved','mousePressed','AI\x20scores!','velX','removeClass','elt','aiSpeed','prevX','AI\x20finished\x20escape\x20attempt.','speedValue','96556GnWCFl','20CzxbLv','AI\x20State:\x20ACTIVE\x20PLAY\x20(Intercept\x20&\x20Aim)','grabbing','!!!\x20TRIGGERING\x20ESCAPE\x20!!!','change','length','textContent'];_0x10d8=function(){return _0x2c3abf;};return _0x10d8();}function handleMouseDragged(){isDragging&&updatePlayerPosition(mouseX,mouseY);}function handleMouseReleased(){isDragging&&releasePaddleGrab();}function checkPaddleGrab(_0xdba865,_0x1a37fa){const _0xbc8ae5=_0x357bf8;let _0x17c472=dist(_0xdba865,_0x1a37fa,player['x'],player['y']);_0x17c472<player['r']*1.8&&(isDragging=!![],canvasElement[_0xbc8ae5(0x129)]('grabbing'));}function releasePaddleGrab(){const _0x1d6173=_0x357bf8;isDragging=![],canvasElement[_0x1d6173(0x133)]('grabbing');}function updatePlayerPosition(_0x2f8720,_0x36450e){player['prevX']=player['x'],player['prevY']=player['y'];let _0x584738,_0x45359d,_0x204120,_0x56a90e;isPortrait?(_0x204120=player['r'],_0x56a90e=width-player['r'],_0x584738=height/0x2+player['r'],_0x45359d=height-player['r']):(_0x204120=player['r'],_0x56a90e=width/0x2-player['r'],_0x584738=player['r'],_0x45359d=height-player['r']),player['x']=constrain(_0x2f8720,_0x204120,_0x56a90e),player['y']=constrain(_0x36450e,_0x584738,_0x45359d);}function draw(){background(fieldColor[0x0],fieldColor[0x1],fieldColor[0x2]),updatePlayerVelocity(),updateAI(),updatePuck(),checkCollisions(),checkGoal(),drawField(),drawBackgroundScore(),drawPaddles(),drawPuck();}function updatePlayerVelocity(){const _0x519ac0=_0x357bf8;if(!isDragging){player[_0x519ac0(0x132)]*=0.8,player[_0x519ac0(0x147)]*=0.8;if(abs(player[_0x519ac0(0x132)])<0.1)player[_0x519ac0(0x132)]=0x0;if(abs(player[_0x519ac0(0x147)])<0.1)player[_0x519ac0(0x147)]=0x0;}else player[_0x519ac0(0x132)]=player['x']-player[_0x519ac0(0x136)],player[_0x519ac0(0x147)]=player['y']-player[_0x519ac0(0x15f)];}function updateAI(){const _0x2480d2=_0x357bf8;ai[_0x2480d2(0x136)]=ai['x'],ai['prevY']=ai['y'];let _0x56b19d;switch(difficulty){case'easy':_0x56b19d=0.07;break;case _0x2480d2(0x14a):_0x56b19d=0.25;break;case'medium':default:_0x56b19d=0.15;break;}_0x56b19d*=aiGlobalSpeedMultiplier*0.7;let _0x10cf00=aiBasePos['x'],_0x31a107=aiBasePos['y'],_0x151c5d=_0x56b19d,_0x45bbf0={'x':0x0,'y':0x0};const _0x3e6925=isPortrait?width/0x2:width,_0x4526de=isPortrait?0x0:height/0x2,_0x39409b=isPortrait?width/0x2:0x0,_0x12be76=isPortrait?height:height/0x2,_0x5e4f0f=dist(ai['x'],ai['y'],puck['x'],puck['y']),_0x480575=sqrt(puck['vx']*puck['vx']+puck['vy']*puck['vy']);let _0x302f9d=map(_0x5e4f0f,0x0,max(width,height)/0x2,AI_PREDICTION_FRAMES_MIN,AI_PREDICTION_FRAMES_MAX);_0x302f9d/=map(_0x480575,0x0,maxPuckSpeed*0.8,0x1,0x3),_0x302f9d=constrain(_0x302f9d,0x2,AI_PREDICTION_FRAMES_MAX);let _0x3e9c85=puck['x']+puck['vx']*_0x302f9d,_0x3526b7=puck['y']+puck['vy']*_0x302f9d;_0x3e9c85=constrain(_0x3e9c85,puckRadius,width-puckRadius),_0x3526b7=constrain(_0x3526b7,puckRadius,height-puckRadius);let _0x7dd2ec=![];isPortrait?_0x7dd2ec=puck['vy']<-0.2:_0x7dd2ec=puck['vx']>0.2;let _0x5bf75b=![],_0x2b3857=![],_0x4ad6d5=![];const _0x4821ef=paddleRadius*2.5;isPortrait?(_0x2b3857=puck['y']<_0x4821ef,_0x4ad6d5=puck['y']<ai['y']):(_0x2b3857=puck['x']>width-_0x4821ef,_0x4ad6d5=puck['x']>ai['x']);if(_0x2b3857&&_0x4ad6d5&&_0x7dd2ec){console['log'](_0x2480d2(0x159)),_0x10cf00=isPortrait?puck['x']:width-ai['r'],_0x31a107=isPortrait?ai['r']:puck['y'];let _0x10ff8e=isPortrait?width/0x2-goalWidth/0x2:height/0x2-goalWidth/0x2,_0x49bee9=isPortrait?width/0x2+goalWidth/0x2:height/0x2+goalWidth/0x2;if(isPortrait)_0x10cf00=constrain(_0x10cf00,_0x10ff8e,_0x49bee9);else _0x31a107=constrain(_0x31a107,_0x10ff8e,_0x49bee9);_0x10cf00=constrain(_0x10cf00,ai['r'],width-ai['r']),_0x31a107=constrain(_0x31a107,ai['r'],height-ai['r']),_0x151c5d*=0x5*aiGlobalSpeedMultiplier*0.7,_0x5bf75b=!![],ai[_0x2480d2(0x165)]=0x0;}else{if(ai[_0x2480d2(0x144)]&&!_0x5bf75b){console[_0x2480d2(0x12d)](_0x2480d2(0x14f));let _0x1d2153=width/0x2-ai['x'],_0x5c77b4=height/0x2-ai['y'],_0x25b1df=sqrt(_0x1d2153*_0x1d2153+_0x5c77b4*_0x5c77b4);_0x25b1df>0x1&&(_0x1d2153/=_0x25b1df,_0x5c77b4/=_0x25b1df),_0x10cf00=ai['x']+_0x1d2153*STUCK_ESCAPE_FORCE*0x5,_0x31a107=ai['y']+_0x5c77b4*STUCK_ESCAPE_FORCE*0x5,_0x151c5d*=4.5,ai[_0x2480d2(0x144)]=![],ai['stuckInCornerTimer']=0x0,_0x5bf75b=!![],console[_0x2480d2(0x12d)](_0x2480d2(0x137));}else{if(_0x480575<0.4&&!ai['isStuckEscaping']&&!_0x5bf75b){let _0x3fb2d9=isPortrait?puck['y']<height/0x2+paddleRadius:puck['x']>width/0x2-paddleRadius;if(_0x3fb2d9){let _0x5eb65b=![];const _0x5682a4=paddleRadius*0x3;isPortrait?puck['y']<height/0x2&&(puck['x']<_0x5682a4||puck['x']>width-_0x5682a4)&&(_0x5eb65b=!![]):puck['x']>width/0x2&&(puck['y']<_0x5682a4||puck['y']>height-_0x5682a4)&&(_0x5eb65b=!![]);if(_0x5eb65b){console[_0x2480d2(0x12d)](_0x2480d2(0x12e));let _0x2f74cf=width/0x2,_0x3ce5c4=height/0x2,_0x56e495=_0x2f74cf-puck['x'],_0x265b82=_0x3ce5c4-puck['y'],_0x2ea6a6=sqrt(_0x56e495*_0x56e495+_0x265b82*_0x265b82);_0x2ea6a6>0.1?(_0x56e495/=_0x2ea6a6,_0x265b82/=_0x2ea6a6):(_0x56e495=isPortrait?0x0:-0x1,_0x265b82=isPortrait?0x1:0x0),_0x10cf00=puck['x']-_0x56e495*(ai['r']*0.6),_0x31a107=puck['y']-_0x265b82*(ai['r']*0.6),_0x151c5d*=1.8*aiGlobalSpeedMultiplier*0.7,_0x5bf75b=!![],ai['stuckInCornerTimer']=0x0;}}}}}if(!_0x5bf75b){let _0x233657=isPortrait?_0x3526b7<aiCriticalDefenseLine&&_0x7dd2ec:_0x3e9c85>aiCriticalDefenseLine&&_0x7dd2ec,_0x54ff75=isPortrait?_0x3526b7<aiDefensiveLine&&_0x7dd2ec:_0x3e9c85>aiDefensiveLine&&_0x7dd2ec;if(_0x233657){console[_0x2480d2(0x12d)](_0x2480d2(0x141));let _0x46f527,_0x981b2d;if(isPortrait){}else{}let _0x3819ce=_0x46f527-_0x3e9c85,_0x442c2e=_0x981b2d-_0x3526b7,_0x2a3db2=sqrt();if(_0x2a3db2>0.1){}else{}_0x151c5d*=0x4*aiGlobalSpeedMultiplier*0.7,ai[_0x2480d2(0x165)]=0x0;}else{if(_0x54ff75){console[_0x2480d2(0x12d)](_0x2480d2(0x15c));let _0x413087=_0x3e9c85,_0x495716=_0x3526b7;if(isPortrait){}else{}_0x151c5d*=2.2*aiGlobalSpeedMultiplier*0.7,ai[_0x2480d2(0x165)]=0x0;}else{let _0x443f6d=isPortrait?_0x3526b7<height/0x2+puck['r']*0x3:_0x3e9c85>width/0x2-puck['r']*0x3;if(_0x443f6d){console['log'](_0x2480d2(0x13b));let _0x318851=_0x39409b-_0x3e9c85,_0x56ef63=_0x12be76-_0x3526b7,_0x2ba63a=sqrt(_0x318851*_0x318851+_0x56ef63*_0x56ef63);if(_0x2ba63a>0.1)_0x318851/=_0x2ba63a,_0x56ef63/=_0x2ba63a;else{}_0x10cf00=_0x3e9c85-_0x318851*aiOffensivePush,_0x31a107=_0x3526b7-_0x56ef63*aiOffensivePush;let _0xfb320e=_0x480575>0x1?map(_0x480575,0x1,maxPuckSpeed,1.3,0x2):1.3;_0x151c5d*=_0xfb320e*aiGlobalSpeedMultiplier*0.7,ai[_0x2480d2(0x165)]=0x0;}else console[_0x2480d2(0x12d)]('AI\x20State:\x20WAITING\x20/\x20Returning'),_0x10cf00=aiBasePos['x'],_0x31a107=aiBasePos['y'],_0x151c5d*=0.7*aiGlobalSpeedMultiplier*0.7;if(!_0x443f6d){let _0x171034=![];const _0x2aaa61=cornerCheckRadius*1.1;isPortrait?_0x171034=ai['y']<_0x2aaa61+ai['r']&&(ai['x']<_0x2aaa61+ai['r']||ai['x']>width-_0x2aaa61-ai['r']):_0x171034=ai['x']>width-_0x2aaa61-ai['r']&&(ai['y']<_0x2aaa61+ai['r']||ai['y']>height-_0x2aaa61-ai['r']),_0x171034&&_0x5e4f0f<ai['r']+puck['r']+paddleRadius*0.5?(_0x480575<0.3&&ai[_0x2480d2(0x15b)]['x']>0x0?(ai[_0x2480d2(0x165)]++,console['log'](_0x2480d2(0x163)+ai[_0x2480d2(0x165)]+'/'+STUCK_THRESHOLD_FRAMES)):(ai[_0x2480d2(0x165)]=0x0,ai[_0x2480d2(0x15b)]={'x':puck['x'],'y':puck['y']}),ai[_0x2480d2(0x165)]>STUCK_THRESHOLD_FRAMES&&(ai[_0x2480d2(0x144)]=!![],console['log'](_0x2480d2(0x13d)))):(ai[_0x2480d2(0x165)]=0x0,ai[_0x2480d2(0x15b)]={'x':-0x1,'y':-0x1});}else ai[_0x2480d2(0x165)]=0x0;}}}_0x45bbf0=calculateWallAvoidance(ai,isPortrait,scaledWallAvoidDistance,wallAvoidanceForce,_0x3e6925,_0x4526de);let _0xf9605f=(_0x10cf00-ai['x'])*_0x151c5d,_0x56f227=(_0x31a107-ai['y'])*_0x151c5d;_0xf9605f+=_0x45bbf0['x']*_0x151c5d*0x37,_0x56f227+=_0x45bbf0['y']*_0x151c5d*0x37;let _0x350041=sqrt(_0xf9605f*_0xf9605f+_0x56f227*_0x56f227),_0x3f47d9=_0x56b19d*0xb4;_0x350041>_0x3f47d9&&(_0xf9605f=_0xf9605f/_0x350041*_0x3f47d9,_0x56f227=_0x56f227/_0x350041*_0x3f47d9);if(_0x2b3857&&_0x4ad6d5&&_0x7dd2ec&&!ai[_0x2480d2(0x144)]){const _0xc36231=maxPuckSpeed*0.8;_0x350041>_0xc36231&&(_0xf9605f=_0xf9605f/_0x350041*_0xc36231,_0x56f227=_0x56f227/_0x350041*_0xc36231);}ai['x']+=_0xf9605f,ai['y']+=_0x56f227;const _0x398598=0.5;let _0x556662=ai['x'],_0x48da34=ai['y'];isPortrait?(_0x556662=constrain(ai['x'],ai['r']+_0x398598,width-ai['r']-_0x398598),_0x48da34=constrain(ai['y'],ai['r']+_0x398598,height/0x2-ai['r']-_0x398598)):(_0x556662=constrain(ai['x'],width/0x2+ai['r']+_0x398598,width-ai['r']-_0x398598),_0x48da34=constrain(ai['y'],ai['r']+_0x398598,height-ai['r']-_0x398598)),ai['x']=_0x556662,ai['y']=_0x48da34,ai['velX']=ai['x']-ai[_0x2480d2(0x136)],ai['velY']=ai['y']-ai[_0x2480d2(0x15f)];}function calculateWallAvoidance(_0x2993de,_0x44d2f3,_0x5b65c8,_0x282de8,_0x104fb4,_0x5d2bf6){let _0x4cfe6f={'x':0x0,'y':0x0},_0x1b4165;const _0x405151=1.6;if(_0x44d2f3){let _0x2f68ae=_0x2993de['y'],_0x2678ce=_0x2f68ae<_0x5b65c8*1.5?_0x405151:0x1;_0x1b4165=calculateSingleWallAvoidance(_0x2993de['y'],0x0,_0x5b65c8*_0x2678ce,_0x282de8*_0x2678ce);if(_0x1b4165!==0x0)_0x4cfe6f['y']+=_0x1b4165;_0x1b4165=calculateSingleWallAvoidance(_0x2993de['x'],0x0,_0x5b65c8,_0x282de8);if(_0x1b4165!==0x0)_0x4cfe6f['x']+=_0x1b4165;_0x1b4165=calculateSingleWallAvoidance(_0x2993de['x'],width,_0x5b65c8,_0x282de8);if(_0x1b4165!==0x0)_0x4cfe6f['x']+=_0x1b4165;_0x1b4165=calculateSingleWallAvoidance(_0x2993de['y'],height/0x2,_0x5b65c8*0.5,_0x282de8*0.4);if(_0x1b4165!==0x0)_0x4cfe6f['y']+=_0x1b4165;}else{let _0x48b4e3=width-_0x2993de['x'],_0x3e4294=_0x48b4e3<_0x5b65c8*1.5?_0x405151:0x1;_0x1b4165=calculateSingleWallAvoidance(_0x2993de['x'],width,_0x5b65c8*_0x3e4294,_0x282de8*_0x3e4294);if(_0x1b4165!==0x0)_0x4cfe6f['x']+=_0x1b4165;_0x1b4165=calculateSingleWallAvoidance(_0x2993de['y'],0x0,_0x5b65c8,_0x282de8);if(_0x1b4165!==0x0)_0x4cfe6f['y']+=_0x1b4165;_0x1b4165=calculateSingleWallAvoidance(_0x2993de['y'],height,_0x5b65c8,_0x282de8);if(_0x1b4165!==0x0)_0x4cfe6f['y']+=_0x1b4165;_0x1b4165=calculateSingleWallAvoidance(_0x2993de['x'],width/0x2,_0x5b65c8*0.5,_0x282de8*0.4);if(_0x1b4165!==0x0)_0x4cfe6f['x']+=_0x1b4165;}return _0x4cfe6f;}function calculateSingleWallAvoidance(_0x10a4e4,_0x2f5a53,_0xba63e6,_0x2ea899){let _0x142218=_0x10a4e4-_0x2f5a53,_0x106ba2=abs(_0x142218);if(_0x106ba2<_0xba63e6&&_0x106ba2>0.01){let _0x103646=pow((_0xba63e6-_0x106ba2)/_0xba63e6,1.8),_0xa7271f=_0x142218>0x0?0x1:-0x1;return _0xa7271f*_0x103646*_0x2ea899;}return 0x0;}function updatePuck(){puck['x']+=puck['vx'],puck['y']+=puck['vy'],puck['vx']*=friction,puck['vy']*=friction;let _0x5be879=sqrt(puck['vx']*puck['vx']+puck['vy']*puck['vy']);_0x5be879>maxPuckSpeed&&(puck['vx']=puck['vx']/_0x5be879*maxPuckSpeed,puck['vy']=puck['vy']/_0x5be879*maxPuckSpeed);_0x5be879<0.1&&!isDragging&&(puck['vx']=0x0,puck['vy']=0x0);let _0x29b755,_0x579c22,_0x59f1f2=0.95;if(isPortrait){_0x29b755=width/0x2,_0x579c22=goalWidth;let _0x1aee99=_0x29b755-_0x579c22/0x2,_0x332361=_0x29b755+_0x579c22/0x2;puck['y']-puck['r']<0x0&&(!(puck['x']>_0x1aee99&&puck['x']<_0x332361)&&(puck['vy']*=wallRestitution,puck['y']=puck['r'],puck['vx']*=_0x59f1f2));puck['y']+puck['r']>height&&(!(puck['x']>_0x1aee99&&puck['x']<_0x332361)&&(puck['vy']*=wallRestitution,puck['y']=height-puck['r'],puck['vx']*=_0x59f1f2));if(puck['x']-puck['r']<0x0)puck['vx']*=wallRestitution,puck['x']=puck['r'],puck['vy']*=_0x59f1f2;else puck['x']+puck['r']>width&&(puck['vx']*=wallRestitution,puck['x']=width-puck['r'],puck['vy']*=_0x59f1f2);}else{_0x29b755=height/0x2,_0x579c22=goalWidth;let _0x497b1c=_0x29b755-_0x579c22/0x2,_0x136628=_0x29b755+_0x579c22/0x2;puck['x']-puck['r']<0x0&&(!(puck['y']>_0x497b1c&&puck['y']<_0x136628)&&(puck['vx']*=wallRestitution,puck['x']=puck['r'],puck['vy']*=_0x59f1f2));puck['x']+puck['r']>width&&(!(puck['y']>_0x497b1c&&puck['y']<_0x136628)&&(puck['vx']*=wallRestitution,puck['x']=width-puck['r'],puck['vy']*=_0x59f1f2));if(puck['y']-puck['r']<0x0)puck['vy']*=wallRestitution,puck['y']=puck['r'],puck['vx']*=_0x59f1f2;else puck['y']+puck['r']>height&&(puck['vy']*=wallRestitution,puck['y']=height-puck['r'],puck['vx']*=_0x59f1f2);}puck['x']=constrain(puck['x'],-puck['r']*0x5,width+puck['r']*0x5),puck['y']=constrain(puck['y'],-puck['r']*0x5,height+puck['r']*0x5);}function checkCollisions(){handlePaddleCollision(player),handlePaddleCollision(ai);}function handlePaddleCollision(_0x383bfa){const _0x2c9059=_0x357bf8;let _0x4c2e6e=puck['x']-_0x383bfa['x'],_0x4eaab2=puck['y']-_0x383bfa['y'],_0x165531=sqrt(_0x4c2e6e*_0x4c2e6e+_0x4eaab2*_0x4eaab2),_0xf7a47c=puck['r']+_0x383bfa['r'];if(_0x165531<_0xf7a47c&&_0x165531>0.1){let _0x28241d=_0x4c2e6e/_0x165531,_0x446358=_0x4eaab2/_0x165531,_0x29c44a=puck['vx']-_0x383bfa[_0x2c9059(0x132)],_0x2a238f=puck['vy']-_0x383bfa[_0x2c9059(0x147)],_0x441122=_0x29c44a*_0x28241d+_0x2a238f*_0x446358;if(_0x441122>0x0){let _0x21c536=_0xf7a47c-_0x165531;puck['x']+=_0x28241d*(_0x21c536+0.1),puck['y']+=_0x446358*(_0x21c536+0.1);return;}let _0x63c242=0.8,_0xca067e=-(0x1+_0x63c242)*_0x441122;const _0x3a3260=2.5;_0xca067e=max(_0xca067e,_0x3a3260);let _0x12a6cc=constrain(sqrt(_0x383bfa[_0x2c9059(0x132)]*_0x383bfa[_0x2c9059(0x132)]+_0x383bfa[_0x2c9059(0x147)]*_0x383bfa[_0x2c9059(0x147)])*0.15,0x0,0x6);_0xca067e+=_0x12a6cc;let _0x43368c=_0x28241d,_0x5aa0f1=_0x446358,_0x150084=0.3;const _0x59a835=_0x383bfa['r']*0.7;if(_0x165531>_0x59a835){console['log'](_0x2c9059(0x15d)),_0x150084=0.7,_0x63c242=0.6,_0xca067e=-(0x1+_0x63c242)*_0x441122,_0xca067e=max(_0xca067e,_0x3a3260*0.8);let _0x248586=-_0x446358,_0x853086=_0x28241d;_0x43368c=lerp(_0x28241d,_0x248586,0.3),_0x5aa0f1=lerp(_0x446358,_0x853086,0.3);let _0x54dd09=sqrt(_0x43368c*_0x43368c+_0x5aa0f1*_0x5aa0f1);_0x54dd09>0.01&&(_0x43368c/=_0x54dd09,_0x5aa0f1/=_0x54dd09);}puck['vx']+=_0xca067e*_0x43368c,puck['vy']+=_0xca067e*_0x5aa0f1;let _0xfd10a7=sqrt(puck['vx']*puck['vx']+puck['vy']*puck['vy']);_0xfd10a7>maxPuckSpeed&&(puck['vx']=puck['vx']/_0xfd10a7*maxPuckSpeed,puck['vy']=puck['vy']/_0xfd10a7*maxPuckSpeed);let _0x7f8a11=_0xf7a47c-_0x165531,_0x3cc042=1.1;puck['x']+=_0x28241d*(_0x7f8a11*_0x3cc042+0.1),puck['y']+=_0x446358*(_0x7f8a11*_0x3cc042+0.1);let _0x37a67c=puck['x']-_0x383bfa['x'],_0x205a5c=puck['y']-_0x383bfa['y'],_0x1b5739=sqrt(_0x37a67c*_0x37a67c+_0x205a5c*_0x205a5c);_0x1b5739<_0xf7a47c&&(puck['x']=_0x383bfa['x']+_0x28241d*(_0xf7a47c+0.05),puck['y']=_0x383bfa['y']+_0x446358*(_0xf7a47c+0.05));}}function checkGoal(){const _0x282fd0=_0x357bf8;let _0x45bd76,_0x57839b;if(isPortrait){_0x45bd76=width/0x2,_0x57839b=goalWidth;let _0x3da811=_0x45bd76-_0x57839b/0x2,_0x1cbbed=_0x45bd76+_0x57839b/0x2;puck['y']-puck['r']<0x0&&puck['x']>_0x3da811&&puck['x']<_0x1cbbed&&(playerScore++,console[_0x282fd0(0x12d)](_0x282fd0(0x142)),resetRound(![])),puck['y']+puck['r']>height&&puck['x']>_0x3da811&&puck['x']<_0x1cbbed&&(aiScore++,console['log'](_0x282fd0(0x131)),resetRound(!![]));}else{_0x45bd76=height/0x2,_0x57839b=goalWidth;let _0x136de3=_0x45bd76-_0x57839b/0x2,_0x50ef06=_0x45bd76+_0x57839b/0x2;puck['x']-puck['r']<0x0&&puck['y']>_0x136de3&&puck['y']<_0x50ef06&&(aiScore++,console[_0x282fd0(0x12d)]('AI\x20scores!'),resetRound(!![])),puck['x']+puck['r']>width&&puck['y']>_0x136de3&&puck['y']<_0x50ef06&&(playerScore++,console[_0x282fd0(0x12d)](_0x282fd0(0x142)),resetRound(![]));}}function drawBackgroundScore(){const _0x29e425=_0x357bf8;fill(scoreColor[0x0],scoreColor[0x1],scoreColor[0x2],scoreColor[0x3]);let _0x414224;isPortrait?_0x414224=width*0.4:_0x414224=min(width,height)*0.25,textSize(_0x414224),strokeWeight(max(0x1,_0x414224*0.04)),stroke(fieldColor[0x0]*0.5,fieldColor[0x1]*0.5,fieldColor[0x2]*0.5,0x96),text(playerScore+_0x29e425(0x14b)+aiScore,width/0x2,height/0x2),noStroke();}function drawField(){stroke(0xc8,0xc8,0xc8,0xb4),strokeWeight(max(0x2,min(width,height)*0.006));isPortrait?line(0x0,height/0x2,width,height/0x2):line(width/0x2,0x0,width/0x2,height);noFill(),ellipse(width/0x2,height/0x2,min(width,height)*0.2,min(width,height)*0.2);let _0x254b24,_0x4ffd21,_0x1efa39,_0x376e99,_0x336ddc,_0x170eed;strokeWeight(max(0x3,min(width,height)*0.01)),isPortrait?(_0x254b24=width/0x2,_0x4ffd21=goalWidth,_0x336ddc=_0x254b24-_0x4ffd21/0x2,_0x170eed=_0x254b24+_0x4ffd21/0x2,stroke(playerColor[0x0],playerColor[0x1],playerColor[0x2],0xc8),line(_0x336ddc,height,_0x170eed,height),stroke(aiColor[0x0],aiColor[0x1],aiColor[0x2],0xc8),line(_0x336ddc,0x0,_0x170eed,0x0)):(_0x254b24=height/0x2,_0x4ffd21=goalWidth,_0x1efa39=_0x254b24-_0x4ffd21/0x2,_0x376e99=_0x254b24+_0x4ffd21/0x2,stroke(playerColor[0x0],playerColor[0x1],playerColor[0x2],0xc8),line(0x0,_0x1efa39,0x0,_0x376e99),stroke(aiColor[0x0],aiColor[0x1],aiColor[0x2],0xc8),line(width,_0x1efa39,width,_0x376e99)),noStroke();}function drawPaddles(){const _0x493d74=_0x357bf8;fill(player[_0x493d74(0x149)][0x0],player['color'][0x1],player[_0x493d74(0x149)][0x2]),stroke(0xff,0xff,0xff,0x64),strokeWeight(1.5),ellipse(player['x'],player['y'],player['r']*0x2),fill(ai[_0x493d74(0x149)][0x0],ai['color'][0x1],ai[_0x493d74(0x149)][0x2]),stroke(0xff,0xff,0xff,0x64),strokeWeight(1.5),ellipse(ai['x'],ai['y'],ai['r']*0x2),noStroke();}function drawPuck(){const _0x5abaa9=_0x357bf8;fill(puck['color'][0x0],puck[_0x5abaa9(0x149)][0x1],puck[_0x5abaa9(0x149)][0x2]),stroke(0x0,0x0,0x0,0x96),strokeWeight(0x1),ellipse(puck['x'],puck['y'],puck['r']*0x2),noStroke();}function resetRound(_0x549129){const _0x52e53e=_0x357bf8;puck['x']=width/0x2,puck['y']=height/0x2;let _0x24832d=0x5;isPortrait?(puck['vx']=random(-0x1,0x1),puck['vy']=_0x549129?-_0x24832d:_0x24832d):(puck['vx']=_0x549129?-_0x24832d:_0x24832d,puck['vy']=random(-0x1,0x1)),isPortrait?(player['x']=width/0x2,player['y']=height*0.75,ai['x']=aiBasePos['x'],ai['y']=aiBasePos['y']):(player['x']=width*0.25,player['y']=height/0x2,ai['x']=aiBasePos['x'],ai['y']=aiBasePos['y']),player[_0x52e53e(0x132)]=0x0,player['velY']=0x0,player[_0x52e53e(0x136)]=player['x'],player[_0x52e53e(0x15f)]=player['y'],ai[_0x52e53e(0x132)]=0x0,ai[_0x52e53e(0x147)]=0x0,ai[_0x52e53e(0x136)]=ai['x'],ai[_0x52e53e(0x15f)]=ai['y'],ai[_0x52e53e(0x165)]=0x0,ai['lastPuckPosInCorner']={'x':-0x1,'y':-0x1},ai[_0x52e53e(0x144)]=![],isDragging=![],canvasElement&&canvasElement['removeClass'](_0x52e53e(0x13c)),console[_0x52e53e(0x12d)](_0x52e53e(0x15e),playerScore,'-',aiScore);}
-    
+        // --- Глобальні налаштування ---
+        let canvasElement; let isPortrait = false; const padding = 10;
+
+        // Кольори та Розміри
+        const playerColor = [0, 100, 255]; const aiColor = [255, 50, 50]; const puckColor = [240, 240, 240];
+        const fieldColor = [45, 45, 55]; const scoreColor = [200, 200, 200, 80];
+        let paddleRadius; let puckRadius; let goalWidth;
+
+        // Фізика
+        const friction = 0.995;
+        let currentMaxPuckSpeed = 20;
+        let currentEdgeBlendFactor = 0.39;
+        const wallRestitution = -0.95; // Відскок від стін залишається константою
+        let currentPaddleRestitution = 0.8; // НОВА ЗМІННА для відскоку від ключки
+        const initialPaddleRestitutionCenter = 0.8; // Базове значення для центру
+        const initialPaddleRestitutionEdge = 0.6;   // Базове значення для краю
+
+        // --- Об'єкти гри ---
+        let player; let ai; let puck;
+
+        // --- Стан гри ---
+        let playerScore = 0; let aiScore = 0; let difficulty = 'medium'; let isDragging = false;
+
+        // --- Налаштування ШІ ---
+        let aiGlobalSpeedMultiplier = 1.0;
+        const overallSpeedBaseMultiplier = 0.392;
+        const reactionSpeedModifier = 0.7;
+        let aiBasePos; let aiDefensiveLine; let aiCriticalDefenseLine; let aiOffensivePush;
+        const aiAimAssist = 0.1; let cornerCheckRadius; const wallAvoidanceDistance = 50;
+        const wallAvoidanceForce = 0.2; let scaledWallAvoidDistance;
+
+        // Параметри застрягання
+        const STUCK_INITIAL_THRESHOLD_FRAMES = 45; const STUCK_ESCAPE_TIMEOUT_FRAMES = 300;
+        const STUCK_ESCAPE_FORCE_MULTIPLIER = 4.5;
+
+        // Параметри ШІ v11
+        const AI_PREDICTION_FRAMES_MIN = 8; const AI_PREDICTION_FRAMES_MAX = 25;
+        const AI_DEFENSE_CLEAR_BIAS = 0.25; const AI_CRITICAL_CLEAR_STRENGTH = 1.0;
+
+        // --- Нові змінні для графіки ---
+        let puckTrail = []; const TRAIL_LENGTH = 12;
+        let hitSparks = []; const SPARK_LIFETIME = 15; const NUM_SPARKS = 5;
+        let goalFlash = { active: false, side: null, timer: 0 }; const GOAL_FLASH_DURATION = 20;
+
+        // --- Змінні для автоприховування панелі керування ---
+        let controlsElement;
+        let controlsHideTimeout = null; // Зберігатиме ID таймера setTimeout
+        const CONTROLS_HIDE_DELAY = 2500; // Затримка в мілісекундах (2.5 секунди)
+
+        // --- Функція налаштування p5.js ---
+        function setup() {
+            let dims = calculateCanvasSize();
+            canvasElement = createCanvas(dims.w, dims.h);
+            canvasElement.parent(document.body);
+            // isPortrait визначається в resetLayout
+            textAlign(CENTER, CENTER);
+            noStroke();
+            resetLayout(); // Викликаємо тут, щоб встановити isPortrait та початкові розміри/позиції
+            setupEventListeners();
+            noiseSeed(random(1000));
+            controlsElement = document.querySelector('.controls'); // Знаходимо елемент
+            showControls(); // Показати панель при старті
+        }
+
+        // --- Розрахунок розміру канвасу ---
+        function calculateCanvasSize() {
+            let availableWidth = windowWidth - padding * 2;
+            let availableHeight = windowHeight - padding * 2 - 70; // Враховуємо висоту панелі керування (приблизно)
+            availableHeight = max(availableHeight, 200); // Мінімальна висота
+            // Орієнтація визначається безпосередньо перед використанням у resetLayout
+            return { w: floor(availableWidth), h: floor(availableHeight) }; // Повертаємо тільки розміри
+        }
+
+       // --- Скидання/Ініціалізація розмірів та позицій ---
+        function resetLayout() {
+            // Визначаємо isPortrait на основі поточних розмірів полотна (width, height)
+            isPortrait = height > width;
+          //console.log(`Resetting layout. Width: ${width}, Height: ${height}, Portrait: ${isPortrait}`);
+            let minDim = min(width, height);
+            let maxDim = max(width, height); // Додамо для обмеження
+
+            // Розраховуємо БАЗОВІ розміри
+            let basePaddleRadius = max(25, minDim * 0.05);
+            let basePuckRadius = max(10, minDim * 0.03);
+
+            // Застосовуємо множник ТІЛЬКИ в портретному режимі
+            const portraitSizeMultiplier = 1.4;
+            if (isPortrait) {
+                paddleRadius = basePaddleRadius * portraitSizeMultiplier;
+                puckRadius = basePuckRadius * portraitSizeMultiplier;
+              //console.log(`Portrait mode: Applying ${portraitSizeMultiplier}x size multiplier.`);
+            } else {
+                paddleRadius = basePaddleRadius;
+                puckRadius = basePuckRadius;
+              //console.log(`Landscape mode: Using base sizes.`);
+            }
+
+            // Додаткове обмеження максимального розміру, щоб уникнути надто великих об'єктів
+            const maxPaddleRelWidth = 0.12;
+            const maxPuckRelWidth = 0.06;
+            if (isPortrait) {
+                 paddleRadius = min(paddleRadius, width * maxPaddleRelWidth);
+                 puckRadius = min(puckRadius, width * maxPuckRelWidth);
+            } else {
+                 paddleRadius = min(paddleRadius, minDim * 0.1); // Обмеження для альбомного
+                 puckRadius = min(puckRadius, minDim * 0.05);   // Обмеження для альбомного
+            }
+          //console.log(`Final Clamped Sizes: Paddle=${paddleRadius.toFixed(1)}, Puck=${puckRadius.toFixed(1)}`);
+
+
+            // Інші розрахунки, що залежать від розмірів
+            goalWidth = minDim * 0.3;
+            aiOffensivePush = paddleRadius * 0.7;
+            cornerCheckRadius = paddleRadius * 1.8;
+            scaledWallAvoidDistance = minDim * 0.13;
+
+            // Ініціалізуємо об'єкти ПІСЛЯ визначення всіх розмірів
+            initializeObjects(false); // false - не скидання після голу
+
+            isDragging = false;
+            if (canvasElement) {
+                 canvasElement.removeClass('grabbing');
+            }
+            puckTrail = [];
+            hitSparks = [];
+            goalFlash.active = false;
+            showControls(); // Показати панель при зміні розміру/орієнтації
+        }
+
+
+        // --- Ініціалізація ігрових об'єктів (з урахуванням isPortrait) ---
+        function initializeObjects(aiJustScoredOrStuck = false) {
+           //console.log(`Initializing objects. Portrait: ${isPortrait}`); // Додамо лог для перевірки
+
+             let playerStartX, playerStartY;
+             let aiStartX, aiStartY;
+
+             // Визначаємо базові позиції та лінії ЗАЛЕЖНО від орієнтації
+             if (isPortrait) {
+                // Портретний режим: Гравець знизу, ШІ зверху
+                playerStartX = width / 2;
+                playerStartY = height * 0.75;
+                aiBasePos = { x: width / 2, y: height * 0.25 };
+                aiDefensiveLine = height * 0.40;
+                aiCriticalDefenseLine = height * 0.18;
+                aiStartX = aiBasePos.x;
+                aiStartY = aiBasePos.y;
+              //console.log("Setting up for PORTRAIT mode.");
+
+             } else {
+                // Альбомний режим: Гравець зліва, ШІ справа
+                playerStartX = width * 0.25;
+                playerStartY = height / 2;
+                aiBasePos = { x: width * 0.75, y: height / 2 };
+                aiDefensiveLine = width * 0.60;
+                aiCriticalDefenseLine = width * 0.82;
+                aiStartX = aiBasePos.x;
+                aiStartY = aiBasePos.y;
+              //console.log("Setting up for LANDSCAPE mode.");
+             }
+
+             // Створюємо або оновлюємо Гравця
+             if (player) {
+                 player.x = playerStartX; player.y = playerStartY;
+                 player.prevX = playerStartX; player.prevY = playerStartY;
+                 player.velX = 0; player.velY = 0;
+                 player.r = paddleRadius; // Оновлюємо радіус при реініціалізації
+             } else {
+                 player = { x: playerStartX, y: playerStartY, r: paddleRadius, color: playerColor, prevX: playerStartX, prevY: playerStartY, velX: 0, velY: 0 };
+             }
+
+             // Створюємо або оновлюємо ШІ
+             if (ai) {
+                 ai.x = aiStartX; ai.y = aiStartY;
+                 ai.prevX = aiStartX; ai.prevY = aiStartY;
+                 ai.velX = 0; ai.velY = 0;
+                 ai.r = paddleRadius; // Оновлюємо радіус
+                 ai.stuckInCornerTimer = 0;
+                 ai.lastPuckPosInCorner = { x: -1, y: -1 };
+                 ai.isStuckEscaping = false;
+                 ai.escapeAttemptTimer = 0;
+             } else {
+                  ai = {
+                      x: aiStartX, y: aiStartY, r: paddleRadius, color: aiColor,
+                      prevX: aiStartX, prevY: aiStartY, velX: 0, velY: 0,
+                      stuckInCornerTimer: 0, lastPuckPosInCorner: { x: -1, y: -1 },
+                      isStuckEscaping: false, escapeAttemptTimer: 0
+                  };
+             }
+
+             // Створюємо або оновлюємо Шайбу
+             if (puck) {
+                 puck.x = width / 2; puck.y = height / 2;
+                 puck.vx = 0; puck.vy = 0;
+                 puck.r = puckRadius; // Оновлюємо радіус
+             } else {
+                 puck = { x: width / 2, y: height / 2, r: puckRadius, vx: 0, vy: 0, color: puckColor };
+             }
+
+             // Подача шайби (залежить від орієнтації)
+             let serveSpeed = 5;
+             if (isPortrait) {
+                 puck.vx = random(-1.0, 1.0) * serveSpeed * 0.3;
+                 puck.vy = aiJustScoredOrStuck ? serveSpeed : -serveSpeed; // Вниз, якщо ШІ забив/застряг
+             } else { // Landscape
+                 puck.vx = aiJustScoredOrStuck ? -serveSpeed : serveSpeed; // Вліво, якщо ШІ забив/застряг
+                 puck.vy = random(-1.0, 1.0) * serveSpeed * 0.3;
+             }
+           //console.log(`Puck served: vx=${puck.vx.toFixed(1)}, vy=${puck.vy.toFixed(1)}`);
+        }
+
+
+        // --- Обробка зміни розміру вікна ---
+        function windowResized() {
+            let dims = calculateCanvasSize();
+            resizeCanvas(dims.w, dims.h);
+            resetLayout(); // Повністю скидаємо макет для адаптації
+            // Не скидаємо рахунок
+        }
+
+
+// --- Налаштування обробників подій для керування ---
+function setupEventListeners() {
+            // Складність
+            const difficultySelect = document.getElementById('difficulty');
+            difficultySelect.addEventListener('change', (event) => {
+                difficulty = event.target.value;
+              //console.log("Difficulty changed to:", difficulty);
+                resetRound(false); // Скидаємо раунд, щоб ШІ грав по-новому
+            });
+            difficulty = difficultySelect.value;
+
+            // Швидкість ШІ
+            const speedSlider = document.getElementById('aiSpeed');
+            const speedValueSpan = document.getElementById('speedValue');
+            speedSlider.addEventListener('input', (event) => { aiGlobalSpeedMultiplier = parseFloat(event.target.value); speedValueSpan.textContent = aiGlobalSpeedMultiplier.toFixed(1); });
+            aiGlobalSpeedMultiplier = parseFloat(speedSlider.value); speedValueSpan.textContent = aiGlobalSpeedMultiplier.toFixed(1);
+
+            // Швидкість Шайби
+            const puckSpeedSlider = document.getElementById('puckSpeedSlider');
+            const puckSpeedValueSpan = document.getElementById('puckSpeedValue');
+            puckSpeedSlider.addEventListener('input', (event) => { currentMaxPuckSpeed = parseFloat(event.target.value); puckSpeedValueSpan.textContent = currentMaxPuckSpeed.toFixed(0); });
+            currentMaxPuckSpeed = parseFloat(puckSpeedSlider.value); puckSpeedValueSpan.textContent = currentMaxPuckSpeed.toFixed(0);
+
+            // Зачеплення
+             const gripSlider = document.getElementById('gripSlider');
+            const gripValueSpan = document.getElementById('gripValue');
+            gripSlider.addEventListener('input', (event) => { currentEdgeBlendFactor = parseFloat(event.target.value); gripValueSpan.textContent = currentEdgeBlendFactor.toFixed(2); });
+            currentEdgeBlendFactor = parseFloat(gripSlider.value); gripValueSpan.textContent = currentEdgeBlendFactor.toFixed(2);
+
+             // --- ОБРОБНИК ДЛЯ НОВОГО СЛАЙДЕРА ВІДСКОКУ ---
+             const bounceSlider = document.getElementById('bounceSlider');
+             const bounceValueSpan = document.getElementById('bounceValue');
+             bounceSlider.addEventListener('input', (event) => {
+                 currentPaddleRestitution = parseFloat(event.target.value);
+                 bounceValueSpan.textContent = currentPaddleRestitution.toFixed(2);
+               //console.log("Paddle Restitution set to:", currentPaddleRestitution); // Для дебагу
+             });
+             // Встановлюємо початкове значення при завантаженні
+             currentPaddleRestitution = parseFloat(bounceSlider.value);
+             bounceValueSpan.textContent = currentPaddleRestitution.toFixed(2);
+             // --- Кінець обробника ---
+
+            // Touch events
+            canvasElement.elt.addEventListener('touchstart', handleTouchStart, { passive: false });
+            canvasElement.elt.addEventListener('touchmove', handleTouchMove, { passive: false });
+            canvasElement.elt.addEventListener('touchend', handleTouchEnd);
+            canvasElement.elt.addEventListener('touchcancel', handleTouchEnd);
+
+            // Mouse events
+            canvasElement.mousePressed(handleMousePressed);
+            canvasElement.mouseMoved(handleMouseMoved); // Правильний обробник
+            canvasElement.mouseReleased(handleMouseReleased);
+        }
+
+
+        // --- Функції для керування видимістю панелі керування ---
+        function showControls() {
+            if (!controlsElement) {
+                controlsElement = document.querySelector('.controls');
+                if (!controlsElement) return;
+            }
+            // console.log("Showing controls and starting timer.");
+            controlsElement.classList.remove('hidden');
+            clearTimeout(controlsHideTimeout);
+            controlsHideTimeout = setTimeout(hideControls, CONTROLS_HIDE_DELAY);
+        }
+
+        function hideControls() {
+            if (!controlsElement) {
+                controlsElement = document.querySelector('.controls');
+                 if (!controlsElement) return;
+            }
+            // console.log("Hiding controls.");
+            controlsElement.classList.add('hidden');
+        }
+
+        function handleInteractionForControls() {
+            // console.log("Interaction detected, showing controls.");
+            showControls(); // Просто показуємо панель (таймер перезапуститься)
+        }
+
+        // --- Обробники дотиків/миші ---
+        function handleTouchStart(event) {
+            handleInteractionForControls(); // Показати панель при дотику
+            if (event.touches.length > 0) {
+                let touch = event.touches[0];
+                let rect = canvasElement.elt.getBoundingClientRect();
+                let x = touch.clientX - rect.left;
+                let y = touch.clientY - rect.top;
+                checkPaddleGrab(x, y);
+            }
+        }
+        function handleTouchMove(event) {
+            if (isDragging && event.touches.length > 0) {
+                event.preventDefault(); // Запобігаємо прокрутці сторінки
+                let touch = event.touches[0];
+                let rect = canvasElement.elt.getBoundingClientRect();
+                let x = touch.clientX - rect.left;
+                let y = touch.clientY - rect.top;
+                updatePlayerPosition(x, y);
+            }
+        }
+        function handleTouchEnd(event) { if (isDragging) { releasePaddleGrab(); } }
+        function handleMousePressed() {
+            handleInteractionForControls(); // Показати панель при кліку
+            checkPaddleGrab(mouseX, mouseY);
+        }
+        function handleMouseDragged() { /* Не використовується, замінено на mouseMoved */ }
+        function handleMouseMoved() { if (isDragging) { updatePlayerPosition(mouseX, mouseY); } }
+        function handleMouseReleased() { if (isDragging) { releasePaddleGrab(); } }
+        function checkPaddleGrab(x, y) { if (!player) return; let d = dist(x, y, player.x, player.y); if (d < player.r * 1.8) { isDragging = true; canvasElement.addClass('grabbing'); } }
+        function releasePaddleGrab() { isDragging = false; canvasElement.removeClass('grabbing'); }
+        function updatePlayerPosition(newX, newY) {
+            if (!player) return;
+            player.prevX = player.x; player.prevY = player.y;
+            let limitY1, limitY2, limitX1, limitX2;
+            // Обмеження руху ЗАЛЕЖНО від орієнтації
+            if (isPortrait) { // Гравець знизу
+                limitX1 = player.r;
+                limitX2 = width - player.r;
+                limitY1 = height / 2 + player.r; // Не перетинає центральну лінію
+                limitY2 = height - player.r;
+            } else { // Гравець зліва
+                limitX1 = player.r;
+                limitX2 = width / 2 - player.r; // Не перетинає центральну лінію
+                limitY1 = player.r;
+                limitY2 = height - player.r;
+            }
+            player.x = constrain(newX, limitX1, limitX2);
+            player.y = constrain(newY, limitY1, limitY2);
+        }
+
+        // --- Основний цикл малювання p5.js ---
+        function draw() {
+            // 1. Оновлення логіки
+            if (!goalFlash.active) {
+                 updatePlayerVelocity();
+                 updateAI();
+                 if (puck) { updatePuck(); checkCollisions(); checkGoal(); }
+            } else {
+                goalFlash.timer++;
+                if (goalFlash.timer >= GOAL_FLASH_DURATION) {
+                    goalFlash.active = false;
+                    resetRound(goalFlash.side === 'ai');
+                }
+            }
+            updateTrail();
+            updateSparks();
+
+            // 2. Малювання
+            background(fieldColor[0], fieldColor[1], fieldColor[2]);
+            drawFieldTexture();
+            drawField();
+            drawBackgroundScore();
+            if (puck) drawTrail();
+            if (player && ai && puck) {
+                drawPaddles();
+                drawPuck();
+            }
+            drawSparks();
+        }
+
+        // --- Оновлення швидкості ключки гравця ---
+        function updatePlayerVelocity() { if (!player) return; if (!isDragging) { player.velX *= 0.8; player.velY *= 0.8; if (abs(player.velX) < 0.1) player.velX = 0; if (abs(player.velY) < 0.1) player.velY = 0; } else { player.velX = (player.x - player.prevX) * 0.8; player.velY = (player.y - player.prevY) * 0.8; } }
+
+        // --- Оновлення сліду шайби ---
+        function updateTrail() {
+            if (!puck) return;
+            puckTrail.push({ x: puck.x, y: puck.y });
+            if (puckTrail.length > TRAIL_LENGTH) {
+                puckTrail.shift();
+            }
+        }
+
+        // --- Оновлення іскор ---
+        function updateSparks() {
+            for (let i = hitSparks.length - 1; i >= 0; i--) {
+                let spark = hitSparks[i];
+                spark.x += spark.vx;
+                spark.y += spark.vy;
+                spark.life--;
+                if (spark.life <= 0) {
+                    hitSparks.splice(i, 1);
+                }
+            }
+        }
+
+        // --- Створення іскор ---
+        function createSparks(x, y, impactAngle) {
+            for (let i = 0; i < NUM_SPARKS; i++) {
+                let angle = impactAngle + random(-PI / 3, PI / 3);
+                let speed = random(2, 5);
+                hitSparks.push({
+                    x: x, y: y,
+                    vx: cos(angle) * speed, vy: sin(angle) * speed,
+                    life: floor(random(SPARK_LIFETIME * 0.5, SPARK_LIFETIME)),
+                    size: random(1.5, 3.5)
+                });
+            }
+        }
+
+
+        // ==========================================================
+        // ===== ОНОВЛЕНА ЛОГІКА ШІ v17 (Зміни для "Важкої") ====
+        // ==========================================================
+        function updateAI() {
+            if (!ai || !puck) return;
+
+            ai.prevX = ai.x; ai.prevY = ai.y;
+
+            let baseSpeedFactor;
+            switch (difficulty) {
+                case 'easy': baseSpeedFactor = 0.07; break;
+                case 'hard': baseSpeedFactor = 0.25; break;
+                case 'medium': default: baseSpeedFactor = 0.15; break;
+            }
+
+             // --- АДАПТАЦІЯ ШВИДКОСТІ ("Важка") ---
+             if (difficulty === 'hard') {
+                let scoreDiff = aiScore - playerScore;
+                if (scoreDiff <= -2) { baseSpeedFactor *= 1.15; }
+                else if (scoreDiff >= 2) { baseSpeedFactor *= 0.9; }
+             }
+
+            baseSpeedFactor *= aiGlobalSpeedMultiplier * overallSpeedBaseMultiplier;
+
+            let targetX = aiBasePos.x; let targetY = aiBasePos.y;
+            let currentSpeedFactor = baseSpeedFactor;
+            let avoidanceForce = { x: 0, y: 0 };
+
+            const aiGoalX = isPortrait ? width / 2 : width;
+            const aiGoalY = isPortrait ? 0 : height / 2;
+            const playerGoalX = isPortrait ? width / 2 : 0;
+            const playerGoalY = isPortrait ? height : height / 2;
+
+            const aiDistToPuck = dist(ai.x, ai.y, puck.x, puck.y);
+            const puckSpeed = sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
+            let predictionTime = map(aiDistToPuck, 0, max(width, height) / 2, AI_PREDICTION_FRAMES_MIN, AI_PREDICTION_FRAMES_MAX);
+            predictionTime /= map(puckSpeed, 0, currentMaxPuckSpeed * 0.8, 1, 3.0);
+            predictionTime = constrain(predictionTime, 2, AI_PREDICTION_FRAMES_MAX);
+
+            // --- Передбачення ("Важка" - з 1 відскоком) ---
+            let predictedPuckX = puck.x + puck.vx * predictionTime;
+            let predictedPuckY = puck.y + puck.vy * predictionTime;
+            if (difficulty === 'hard') {
+                 if (isPortrait) {
+                    if (predictedPuckX < puckRadius) { predictedPuckX = puckRadius + (puckRadius - predictedPuckX); }
+                    else if (predictedPuckX > width - puckRadius) { predictedPuckX = (width - puckRadius) - (predictedPuckX - (width - puckRadius)); }
+                 } else {
+                    if (predictedPuckY < puckRadius) { predictedPuckY = puckRadius + (puckRadius - predictedPuckY); }
+                    else if (predictedPuckY > height - puckRadius) { predictedPuckY = (height - puckRadius) - (predictedPuckY - (height - puckRadius)); }
+                 }
+            }
+            predictedPuckX = constrain(predictedPuckX, puckRadius, width - puckRadius);
+            predictedPuckY = constrain(predictedPuckY, puckRadius, height - puckRadius);
+
+            let isPuckMovingTowardsAIGoal = false;
+            if (isPortrait) { isPuckMovingTowardsAIGoal = puck.vy < -0.1; }
+            else { isPuckMovingTowardsAIGoal = puck.vx > 0.1; }
+
+            let puckNearGoalLine = false; let puckBehindAI = false;
+            const desperationDistance = paddleRadius * 2.5;
+            if (isPortrait) {
+                puckNearGoalLine = puck.y < desperationDistance; puckBehindAI = puck.y < ai.y;
+            } else {
+                puckNearGoalLine = puck.x > width - desperationDistance; puckBehindAI = puck.x > ai.x;
+            }
+
+            let forcedAction = false;
+
+            // --- ПРІОРИТЕТ 1: ВТЕЧА З КУТА ---
+            if (ai.isStuckEscaping) {
+                if (difficulty === 'hard') { // Розумна втеча
+                  //console.log(`AI State: !!! SMART ESCAPE ATTEMPT !!! Timer: ${ai.escapeAttemptTimer}/${STUCK_ESCAPE_TIMEOUT_FRAMES}`);
+                    let escapeTarget = calculateSmartEscapeTarget(ai, puck);
+                    targetX = escapeTarget.x; targetY = escapeTarget.y;
+                    currentSpeedFactor *= STUCK_ESCAPE_FORCE_MULTIPLIER * reactionSpeedModifier * 1.2;
+                } else { // Стандартна втеча
+                  //console.log(`AI State: !!! ESCAPE ATTEMPT !!! Timer: ${ai.escapeAttemptTimer}/${STUCK_ESCAPE_TIMEOUT_FRAMES}`);
+                    let escapeDirX = width / 2 - ai.x; let escapeDirY = height / 2 - ai.y;
+                    let escapeMag = sqrt(escapeDirX*escapeDirX + escapeDirY*escapeDirY);
+                    if (escapeMag > 1){ escapeDirX /= escapeMag; escapeDirY /= escapeMag; }
+                    targetX = ai.x + escapeDirX * 10; targetY = ai.y + escapeDirY * 10;
+                    currentSpeedFactor *= STUCK_ESCAPE_FORCE_MULTIPLIER * reactionSpeedModifier;
+                }
+
+                let isStillNearCorner = checkAiNearCorner(ai, cornerCheckRadius * 1.1);
+                let isPuckStillSlow = puckSpeed < 0.5;
+                if (isStillNearCorner && isPuckStillSlow) {
+                    ai.escapeAttemptTimer++;
+                    if (ai.escapeAttemptTimer > STUCK_ESCAPE_TIMEOUT_FRAMES) {
+                      //console.log("!!! AI STUCK ESCAPE FAILED - RESETTING ROUND !!!");
+                        resetRound(true); return;
+                    }
+                } else {
+                  //console.log("AI escape successful or puck moved.");
+                    ai.isStuckEscaping = false; ai.escapeAttemptTimer = 0;
+                }
+                forcedAction = true;
+            }
+            // --- ПРІОРИТЕТ 2: ВІДЧАЙДУШНИЙ СЕЙВ ---
+            else if (puckNearGoalLine && puckBehindAI && isPuckMovingTowardsAIGoal) {
+               //console.log("AI State: !!! DESPERATION SAVE !!! (Puck Behind)");
+                 targetX = isPortrait ? puck.x : width - ai.r;
+                 targetY = isPortrait ? ai.r : puck.y;
+                 let goalMin = isPortrait ? (width/2 - goalWidth/2) : (height/2 - goalWidth/2);
+                 let goalMax = isPortrait ? (width/2 + goalWidth/2) : (height/2 + goalWidth/2);
+                 if(isPortrait) targetX = constrain(targetX, goalMin, goalMax);
+                 else targetY = constrain(targetY, goalMin, goalMax);
+                 targetX = constrain(targetX, ai.r, width - ai.r);
+                 targetY = constrain(targetY, ai.r, height - ai.r);
+                 currentSpeedFactor *= 5.0 * reactionSpeedModifier;
+                 forcedAction = true;
+                 ai.stuckInCornerTimer = 0; ai.escapeAttemptTimer = 0;
+            }
+            // --- ПРІОРИТЕТ 3: ПІДШТОВХУВАННЯ ПОВІЛЬНОЇ ШАЙБИ ---
+            else if (puckSpeed < 0.4) {
+                let isOnAiHalf = isPortrait ? (puck.y < height / 2 + paddleRadius) : (puck.x > width / 2 - paddleRadius);
+                if (isOnAiHalf) {
+                    let isNearEdge = false; const edgeDistance = paddleRadius * 3.0;
+                    if (isPortrait) { if (puck.y < height / 2 && (puck.x < edgeDistance || puck.x > width - edgeDistance)) isNearEdge = true; }
+                    else { if (puck.x > width / 2 && (puck.y < edgeDistance || puck.y > height - edgeDistance)) isNearEdge = true; }
+                    if (isNearEdge) {
+                      //console.log("AI State: NUDGING SLOW PUCK (Near Edge)");
+                        let pushTargetX = width / 2; let pushTargetY = height / 2;
+                        let pushVecX = pushTargetX - puck.x; let pushVecY = pushTargetY - puck.y;
+                        let pushMag = sqrt(pushVecX*pushVecX + pushVecY*pushVecY);
+                        if (pushMag > 0.1) { pushVecX /= pushMag; pushVecY /= pushMag; }
+                        else { pushVecX = isPortrait ? 0 : -1; pushVecY = isPortrait ? 1 : 0; }
+                        targetX = puck.x - pushVecX * (ai.r * 0.6);
+                        targetY = puck.y - pushVecY * (ai.r * 0.6);
+                        currentSpeedFactor *= 1.8 * reactionSpeedModifier;
+                        forcedAction = true;
+                        ai.stuckInCornerTimer = 0; ai.escapeAttemptTimer = 0;
+                    }
+                }
+            }
+
+            // --- ЗВИЧАЙНА ЛОГІКА ---
+            if (!forcedAction) {
+                 let criticalCheck = isPortrait ? (predictedPuckY < aiCriticalDefenseLine && isPuckMovingTowardsAIGoal) : (predictedPuckX > aiCriticalDefenseLine && isPuckMovingTowardsAIGoal);
+                 let defenseCheck = isPortrait ? (predictedPuckY < aiDefensiveLine && isPuckMovingTowardsAIGoal) : (predictedPuckX > aiDefensiveLine && isPuckMovingTowardsAIGoal);
+
+                // --- КРИТИЧНИЙ ЗАХИСТ ---
+                if (criticalCheck) {
+                  //console.log("AI State: !!! CRITICAL DEFENSE !!!");
+                     let clearTargetX, clearTargetY;
+                     if (isPortrait) {
+                        clearTargetX = (predictedPuckX < width / 2) ? playerGoalX - width * 0.2 : playerGoalX + width * 0.2;
+                        clearTargetY = playerGoalY + height * 0.1;
+                     } else {
+                        clearTargetX = playerGoalX - width * 0.1;
+                        clearTargetY = (predictedPuckY < height / 2) ? playerGoalY - height * 0.2 : playerGoalY + height * 0.2;
+                     }
+                    // Проактивне уникнення кутів ("Важка")
+                    if (difficulty === 'hard' && isNearCorner(predictedPuckX, predictedPuckY, puckRadius * 2)) {
+                       //console.log("--- Proactive Corner Avoidance (Critical) ---");
+                         clearTargetX = width / 2; clearTargetY = height / 2;
+                    }
+                     clearTargetX = lerp(predictedPuckX, clearTargetX, AI_CRITICAL_CLEAR_STRENGTH);
+                     clearTargetY = lerp(predictedPuckY, clearTargetY, AI_CRITICAL_CLEAR_STRENGTH);
+                     let clearVectorX = clearTargetX - predictedPuckX; let clearVectorY = clearTargetY - predictedPuckY;
+                     let mag = sqrt(clearVectorX*clearVectorX + clearVectorY*clearVectorY);
+                     if (mag > 0.1) { clearVectorX /= mag; clearVectorY /= mag; }
+                     else { clearVectorX = isPortrait ? 0 : -1; clearVectorY = isPortrait ? 1 : 0; }
+                     targetX = predictedPuckX - clearVectorX * aiOffensivePush * 0.6;
+                     targetY = predictedPuckY - clearVectorY * aiOffensivePush * 0.6;
+                     currentSpeedFactor *= 4.0 * reactionSpeedModifier;
+                     ai.stuckInCornerTimer = 0; ai.escapeAttemptTimer = 0;
+                }
+                // --- ЗВИЧАЙНИЙ ЗАХИСТ ---
+                else if (defenseCheck) {
+                   //console.log("AI State: DEFENSE (Intercept & Clear)");
+                     let interceptX = predictedPuckX; let interceptY = predictedPuckY;
+                     let clearTargetX, clearTargetY;
+                    // Розумне позиціонування ("Важка")
+                     if (difficulty === 'hard') {
+                       //console.log("--- Smart Defense Positioning ---");
+                         let goalLineCenterX = isPortrait ? width / 2 : width - ai.r;
+                         let goalLineCenterY = isPortrait ? ai.r : height / 2;
+                         let vecToGoalX = goalLineCenterX - predictedPuckX; let vecToGoalY = goalLineCenterY - predictedPuckY;
+                         let distToGoal = sqrt(vecToGoalX * vecToGoalX + vecToGoalY * vecToGoalY);
+                         if (distToGoal > 0.1) { vecToGoalX /= distToGoal; vecToGoalY /= distToGoal; }
+                         targetX = predictedPuckX - vecToGoalX * (paddleRadius * 0.8);
+                         targetY = predictedPuckY - vecToGoalY * (paddleRadius * 0.8);
+                          if (isPortrait) { clearTargetX = lerp(playerGoalX, (predictedPuckX < width / 2 ? 0 : width), AI_DEFENSE_CLEAR_BIAS * 1.5); clearTargetY = playerGoalY; }
+                          else { clearTargetX = playerGoalX; clearTargetY = lerp(playerGoalY, (predictedPuckY < height / 2 ? 0 : height), AI_DEFENSE_CLEAR_BIAS * 1.5); }
+                     } else { // Стандартна логіка
+                         if (isPortrait) { clearTargetX = lerp(playerGoalX, (predictedPuckX < width / 2 ? 0 : width), AI_DEFENSE_CLEAR_BIAS); clearTargetY = playerGoalY; }
+                         else { clearTargetX = playerGoalX; clearTargetY = lerp(playerGoalY, (predictedPuckY < height / 2 ? 0 : height), AI_DEFENSE_CLEAR_BIAS); }
+                         let clearVectorX = clearTargetX - interceptX; let clearVectorY = clearTargetY - interceptY;
+                         let mag = sqrt(clearVectorX * clearVectorX + clearVectorY * clearVectorY);
+                         if (mag > 0.1) { clearVectorX /= mag; clearVectorY /= mag; } else { clearVectorX = isPortrait ? 0 : -1; clearVectorY = isPortrait ? 1 : 0; }
+                         targetX = interceptX - clearVectorX * aiOffensivePush * 0.8;
+                         targetY = interceptY - clearVectorY * aiOffensivePush * 0.8;
+                     }
+                     // Проактивне уникнення кутів ("Важка")
+                    if (difficulty === 'hard' && isNearCorner(targetX, targetY, paddleRadius * 1.5)) {
+                       //console.log("--- Proactive Corner Avoidance (Defense) ---");
+                         if (isPortrait) { targetY = max(targetY, paddleRadius * 2.5); clearTargetX = (targetX < width/2) ? width : 0; clearTargetY = targetY + height*0.2; }
+                         else { targetX = min(targetX, width - paddleRadius * 2.5); clearTargetY = (targetY < height/2) ? height : 0; clearTargetX = targetX - width*0.2; }
+                         let clearVectorX = clearTargetX - interceptX; let clearVectorY = clearTargetY - interceptY;
+                         let mag = sqrt(clearVectorX * clearVectorX + clearVectorY * clearVectorY);
+                         if (mag > 0.1) { clearVectorX /= mag; clearVectorY /= mag; } else { clearVectorX = isPortrait ? 0 : -1; clearVectorY = isPortrait ? 1 : 0; }
+                         targetX = interceptX - clearVectorX * aiOffensivePush * 0.8;
+                         targetY = interceptY - clearVectorY * aiOffensivePush * 0.8;
+                    }
+                     currentSpeedFactor *= 2.2 * reactionSpeedModifier;
+                     ai.stuckInCornerTimer = 0; ai.escapeAttemptTimer = 0;
+                }
+                // --- АКТИВНА ГРА / ОЧІКУВАННЯ ---
+                else {
+                     let isActiveZone = isPortrait ? (predictedPuckY < height / 2 + puck.r * 3) : (predictedPuckX > width / 2 - puck.r * 3);
+                     if (isActiveZone) {
+                       //console.log("AI State: ACTIVE PLAY (Intercept & Aim)");
+                         let aimVecX = playerGoalX - predictedPuckX; let aimVecY = playerGoalY - predictedPuckY;
+                         // Банк-шот ("Важка")
+                         let useBankShot = false;
+                         if (difficulty === 'hard') {
+                            let directShotBlocked = isDirectShotBlockedByPlayer(predictedPuckX, predictedPuckY, playerGoalX, playerGoalY, player);
+                            if (directShotBlocked) {
+                              //console.log("--- Attempting Bank Shot ---");
+                                let bankTarget = calculateBankShotTarget(predictedPuckX, predictedPuckY, playerGoalX, playerGoalY);
+                                if (bankTarget) { aimVecX = bankTarget.aimVecX; aimVecY = bankTarget.aimVecY; useBankShot = true; console.log("--- Bank Shot Calculated ---"); }
+                                else { console.log("--- Bank Shot Failed, using direct ---"); }
+                            }
+                         }
+                         // Пряме прицілювання (якщо не банк-шот)
+                         if (!useBankShot) {
+                             let aimMag = sqrt(aimVecX*aimVecX + aimVecY*aimVecY);
+                             if(aimMag > 0.1){ aimVecX /= aimMag; aimVecY /= aimMag; } else { aimVecX = isPortrait ? 0 : -1; aimVecY = isPortrait ? 1 : 0; }
+                             let aimAngle = atan2(aimVecY, aimVecX);
+                             let randomAngleOffset = random(-aiAimAssist * (difficulty === 'hard' ? 1.2 : 1.0), aiAimAssist * (difficulty === 'hard' ? 1.2 : 1.0));
+                             aimAngle += randomAngleOffset;
+                             aimVecX = cos(aimAngle); aimVecY = sin(aimAngle);
+                         }
+                         targetX = predictedPuckX - aimVecX * aiOffensivePush; targetY = predictedPuckY - aimVecY * aiOffensivePush;
+                         let speedBoost = (puckSpeed > 1.0) ? map(puckSpeed, 1, currentMaxPuckSpeed, 1.3, 2.0) : 1.3;
+                         currentSpeedFactor *= speedBoost * reactionSpeedModifier;
+                         ai.stuckInCornerTimer = 0; ai.escapeAttemptTimer = 0;
+                     } else { // Очікування
+                          //console.log("AI State: WAITING / Returning");
+                          targetX = aiBasePos.x; targetY = aiBasePos.y;
+                          currentSpeedFactor *= 0.7 * reactionSpeedModifier;
+                          // Перевірка початкового застрягання
+                          let isNearCornerCheck = checkAiNearCorner(ai, cornerCheckRadius * 1.1);
+                          if (isNearCornerCheck && aiDistToPuck < (ai.r + puck.r + paddleRadius * 0.5) ) {
+                             if (puckSpeed < 0.3 && ai.lastPuckPosInCorner.x > 0) {
+                                 ai.stuckInCornerTimer++;
+                                 //console.log(`Initial Stuck Timer: ${ai.stuckInCornerTimer}/${STUCK_INITIAL_THRESHOLD_FRAMES}`);
+                                 if (ai.stuckInCornerTimer > STUCK_INITIAL_THRESHOLD_FRAMES) {
+                                    // console.log("!!! TRIGGERING ESCAPE ATTEMPT !!!");
+                                     ai.isStuckEscaping = true; ai.stuckInCornerTimer = 0; ai.escapeAttemptTimer = 0;
+                                 }
+                             } else { ai.stuckInCornerTimer = 0; ai.lastPuckPosInCorner = { x: puck.x, y: puck.y }; }
+                          } else { ai.stuckInCornerTimer = 0; ai.lastPuckPosInCorner = { x: -1, y: -1 }; }
+                     }
+                }
+            }
+
+            // --- УНИКНЕННЯ СТІН ---
+            avoidanceForce = calculateWallAvoidance(ai, isPortrait, scaledWallAvoidDistance, wallAvoidanceForce, aiGoalX, aiGoalY);
+
+            // --- ЗАСТОСУВАННЯ РУХУ ---
+            let desiredVelX = (targetX - ai.x) * currentSpeedFactor; let desiredVelY = (targetY - ai.y) * currentSpeedFactor;
+            desiredVelX += avoidanceForce.x * currentSpeedFactor * 55; desiredVelY += avoidanceForce.y * currentSpeedFactor * 55;
+            let desiredSpeed = sqrt(desiredVelX * desiredVelX + desiredVelY * desiredVelY);
+            let maxAllowedSpeed = baseSpeedFactor * (difficulty === 'hard' ? 200 : 180) * reactionSpeedModifier;
+            if (desiredSpeed > maxAllowedSpeed) { desiredVelX = (desiredVelX / desiredSpeed) * maxAllowedSpeed; desiredVelY = (desiredVelY / desiredSpeed) * maxAllowedSpeed; }
+            // Обмеження швидкості при сейві
+            if (!ai.isStuckEscaping && puckNearGoalLine && puckBehindAI && isPuckMovingTowardsAIGoal) {
+                 const desperationMaxSpeed = currentMaxPuckSpeed * 0.8 * reactionSpeedModifier;
+                 let currentDesiredSpeed = sqrt(desiredVelX * desiredVelX + desiredVelY * desiredVelY);
+                 if (currentDesiredSpeed > desperationMaxSpeed) { desiredVelX = (desiredVelX / currentDesiredSpeed) * desperationMaxSpeed; desiredVelY = (desiredVelY / currentDesiredSpeed) * desperationMaxSpeed; }
+            }
+            ai.x += desiredVelX; ai.y += desiredVelY;
+
+            // --- ОБМЕЖЕННЯ ПОЗИЦІЇ ШІ ---
+            const borderMargin = 0.5;
+            let constrainedX = ai.x; let constrainedY = ai.y;
+            if(isPortrait){ // Верхня половина
+                constrainedX = constrain(ai.x, ai.r + borderMargin, width - ai.r - borderMargin);
+                constrainedY = constrain(ai.y, ai.r + borderMargin, height / 2 - ai.r - borderMargin);
+            } else { // Права половина
+                constrainedX = constrain(ai.x, width / 2 + ai.r + borderMargin, width - ai.r - borderMargin);
+                constrainedY = constrain(ai.y, ai.r + borderMargin, height - ai.r - borderMargin);
+            }
+            ai.x = constrainedX; ai.y = constrainedY;
+
+            ai.velX = ai.x - ai.prevX; ai.velY = ai.y - ai.prevY;
+        }
+        // ===== Кінець updateAI =====
+
+
+        // --- Допоміжні функції для ШІ "Важка" ---
+        function checkAiNearCorner(agent, checkDist) { if (!agent) return false; if(isPortrait){ return (agent.y < checkDist + agent.r) && (agent.x < checkDist + agent.r || agent.x > width - checkDist - agent.r); } else{ return (agent.x > width - checkDist - agent.r) && (agent.y < checkDist + agent.r || agent.y > height - checkDist - agent.r); } }
+        function isNearCorner(x, y, threshold) { let nearTop = y < threshold; let nearBottom = y > height - threshold; let nearLeft = x < threshold; let nearRight = x > width - threshold; return (nearTop && nearLeft) || (nearTop && nearRight) || (nearBottom && nearLeft) || (nearBottom && nearRight); }
+        function calculateSmartEscapeTarget(agent, puck) {
+            let target = { x: width / 2, y: height / 2 };
+            let escapeDist = agent.r * 2.5;
+             let nearTop = agent.y < agent.r + 10; let nearLeft = agent.x < agent.r + 10; let nearRight = agent.x > width - agent.r - 10;
+             let nearGoalLine = isPortrait ? nearTop : (agent.x > width - agent.r - 10);
+             let nearSideWallLeft = isPortrait ? nearLeft : (agent.y < agent.r + 10);
+             let nearSideWallRight = isPortrait ? nearRight : (agent.y > height - agent.r - 10);
+            if (nearGoalLine && nearSideWallLeft) { target.x = agent.x + escapeDist; target.y = agent.y + escapeDist; }
+            else if (nearGoalLine && nearSideWallRight) { target.x = agent.x - escapeDist; target.y = agent.y + escapeDist; }
+            else if (nearGoalLine) { target.x = agent.x; target.y = agent.y + escapeDist * 1.5; }
+            else if (nearSideWallLeft) { target.x = agent.x + escapeDist * 1.5; target.y = agent.y; }
+            else if (nearSideWallRight) { target.x = agent.x - escapeDist * 1.5; target.y = agent.y; }
+             target.x = constrain(target.x, agent.r, width - agent.r); target.y = constrain(target.y, agent.r, height - agent.r);
+             return target;
+        }
+        function isDirectShotBlockedByPlayer(puckX, puckY, goalX, goalY, playerPaddle) {
+            if (!playerPaddle) return false;
+            let lineDist = distPointLine(playerPaddle.x, playerPaddle.y, puckX, puckY, goalX, goalY);
+            let dotProductCheck = (playerPaddle.x - puckX) * (goalX - puckX) + (playerPaddle.y - puckY) * (goalY - puckY);
+            let isBetween = dotProductCheck > 0 && dotProductCheck < distSq(puckX, puckY, goalX, goalY);
+            return lineDist < (playerPaddle.r * 2.0) && isBetween;
+        }
+        function distPointLine(px, py, x1, y1, x2, y2) { let L2 = distSq(x1, y1, x2, y2); if (L2 === 0) return dist(px, py, x1, y1); let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / L2; t = max(0, min(1, t)); let projX = x1 + t * (x2 - x1); let projY = y1 + t * (y2 - y1); return dist(px, py, projX, projY); }
+        function distSq(x1, y1, x2, y2){ return (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2); }
+        function calculateBankShotTarget(puckX, puckY, goalX, goalY) {
+             let targetWallY, targetWallX; let wallNormalX, wallNormalY;
+             let bestBankTarget = null; let minAngleDiff = PI;
+            for (let side of [-1, 1]) {
+                 if (isPortrait) { targetWallY = (side === -1) ? puckRadius : height - puckRadius; let intersectX = lerp(puckX, goalX, 0.5); intersectX = constrain(intersectX, puckRadius, width-puckRadius); wallNormalX = 0; wallNormalY = -side; targetWallX = intersectX; }
+                 else { targetWallX = (side === -1) ? puckRadius : width - puckRadius; let intersectY = lerp(puckY, goalY, 0.5); intersectY = constrain(intersectY, puckRadius, height-puckRadius); wallNormalX = -side; wallNormalY = 0; targetWallY = intersectY; }
+                 let vecToWallX = targetWallX - puckX; let vecToWallY = targetWallY - puckY; let distToWall = sqrt(vecToWallX * vecToWallX + vecToWallY * vecToWallY); if (distToWall < 1) continue; vecToWallX /= distToWall; vecToWallY /= distToWall;
+                 let vecWallToGoalX = goalX - targetWallX; let vecWallToGoalY = goalY - targetWallY; let distWallToGoal = sqrt(vecWallToGoalX * vecWallToGoalX + vecWallToGoalY * vecWallToGoalY); if (distWallToGoal < 1) continue; vecWallToGoalX /= distWallToGoal; vecWallToGoalY /= distWallToGoal;
+                 let dotIncoming = vecToWallX * wallNormalX + vecToWallY * wallNormalY; let dotOutgoing = vecWallToGoalX * wallNormalX + vecWallToGoalY * wallNormalY;
+                 let angleDiff = abs(acos(constrain(dotIncoming, -1, 1)) + acos(constrain(dotOutgoing, -1, 1)) - PI);
+                 if (angleDiff < 0.8 && angleDiff < minAngleDiff) { minAngleDiff = angleDiff; bestBankTarget = { aimVecX: vecToWallX, aimVecY: vecToWallY }; }
+            } return bestBankTarget;
+        }
+
+        // --- Розрахунок сили уникнення стін ---
+        function calculateWallAvoidance(agent, isPortraitOrientation, avoidDistance, forceMagnitude, goalX, goalY) { let totalForce = { x: 0, y: 0 }; let steer; const goalAvoidBoost = 1.6; if (isPortraitOrientation) { let distToGoalLine = agent.y; let boost = (distToGoalLine < avoidDistance * 1.5) ? goalAvoidBoost : 1.0; steer = calculateSingleWallAvoidance(agent.y, 0, avoidDistance * boost, forceMagnitude * boost); if (steer !== 0) totalForce.y += steer; steer = calculateSingleWallAvoidance(agent.x, 0, avoidDistance, forceMagnitude); if (steer !== 0) totalForce.x += steer; steer = calculateSingleWallAvoidance(agent.x, width, avoidDistance, forceMagnitude); if (steer !== 0) totalForce.x += steer; steer = calculateSingleWallAvoidance(agent.y, height / 2, avoidDistance * 0.5, forceMagnitude * 0.4); if (steer !== 0) totalForce.y += steer; } else { let distToGoalLine = width - agent.x; let boost = (distToGoalLine < avoidDistance * 1.5) ? goalAvoidBoost : 1.0; steer = calculateSingleWallAvoidance(agent.x, width, avoidDistance * boost, forceMagnitude * boost); if (steer !== 0) totalForce.x += steer; steer = calculateSingleWallAvoidance(agent.y, 0, avoidDistance, forceMagnitude); if (steer !== 0) totalForce.y += steer; steer = calculateSingleWallAvoidance(agent.y, height, avoidDistance, forceMagnitude); if (steer !== 0) totalForce.y += steer; steer = calculateSingleWallAvoidance(agent.x, width / 2, avoidDistance * 0.5, forceMagnitude * 0.4); if (steer !== 0) totalForce.x += steer; } return totalForce; }
+        function calculateSingleWallAvoidance(agentPos, wallPos, avoidDist, forceMag) { let diff = agentPos - wallPos; let distToWall = abs(diff); if (distToWall < avoidDist && distToWall > 0.01) { let repelForce = pow((avoidDist - distToWall) / avoidDist, 1.8); let direction = (diff > 0 ? 1 : -1); return direction * repelForce * forceMag; } return 0; }
+
+        // --- Оновлення фізики шайби ---
+        function updatePuck() {
+             if (!puck) return;
+             puck.x += puck.vx; puck.y += puck.vy;
+             puck.vx *= friction; puck.vy *= friction;
+             let speed = sqrt(puck.vx*puck.vx + puck.vy*puck.vy);
+             if (speed > currentMaxPuckSpeed) { puck.vx = (puck.vx / speed) * currentMaxPuckSpeed; puck.vy = (puck.vy / speed) * currentMaxPuckSpeed; }
+             if (speed < 0.1 && !isDragging) { puck.vx = 0; puck.vy = 0; }
+
+             let goalPos, goalSize; let slightlyMoreFrictionOnWalls = 0.95;
+             if (isPortrait) {
+                 goalPos = width / 2; goalSize = goalWidth; let goalLimitLeft = goalPos - goalSize / 2; let goalLimitRight = goalPos + goalSize / 2;
+                 if ((puck.y - puck.r < 0 && !(puck.x > goalLimitLeft && puck.x < goalLimitRight)) || (puck.y + puck.r > height && !(puck.x > goalLimitLeft && puck.x < goalLimitRight))) {
+                     puck.vy *= wallRestitution; puck.y = constrain(puck.y, puck.r, height - puck.r); puck.vx *= slightlyMoreFrictionOnWalls;
+                 }
+                  if (puck.x - puck.r < 0 || puck.x + puck.r > width) {
+                     puck.vx *= wallRestitution; puck.x = constrain(puck.x, puck.r, width - puck.r); puck.vy *= slightlyMoreFrictionOnWalls;
+                 }
+             } else { // Landscape
+                 goalPos = height / 2; goalSize = goalWidth; let goalLimitTop = goalPos - goalSize / 2; let goalLimitBottom = goalPos + goalSize / 2;
+                 if ((puck.x - puck.r < 0 && !(puck.y > goalLimitTop && puck.y < goalLimitBottom)) || (puck.x + puck.r > width && !(puck.y > goalLimitTop && puck.y < goalLimitBottom))) {
+                     puck.vx *= wallRestitution; puck.x = constrain(puck.x, puck.r, width - puck.r); puck.vy *= slightlyMoreFrictionOnWalls;
+                 }
+                  if (puck.y - puck.r < 0 || puck.y + puck.r > height) {
+                     puck.vy *= wallRestitution; puck.y = constrain(puck.y, puck.r, height - puck.r); puck.vx *= slightlyMoreFrictionOnWalls;
+                 }
+             }
+             puck.x = constrain(puck.x, -puck.r * 5, width + puck.r * 5); puck.y = constrain(puck.y, -puck.r * 5, height + puck.r * 5);
+        }
+
+        // --- Перевірка зіткнень ---
+        function checkCollisions() { if (!player || !ai || !puck) return; handlePaddleCollision(player); handlePaddleCollision(ai); }
+
+
+        // --- Обробка зіткнення ключки з шайбою ---
+        function handlePaddleCollision(paddle) {
+            if (!paddle || !puck) return; // Додаткова перевірка на існування об'єктів
+            let dx = puck.x - paddle.x;
+            let dy = puck.y - paddle.y;
+            let distance = sqrt(dx * dx + dy * dy);
+            let minDistance = puck.r + paddle.r;
+
+            // Перевірка, чи відбулося зіткнення (дистанція менша за суму радіусів)
+            // і чи не знаходяться вони точно в одній точці (distance > 0.1)
+            if (distance < minDistance && distance > 0.1) {
+
+                // Нормаль зіткнення (вектор від центру ключки до центру шайби)
+                let normalX = dx / distance;
+                let normalY = dy / distance;
+
+                // Відносна швидкість шайби відносно ключки
+                let relativeVelX = puck.vx - paddle.velX;
+                let relativeVelY = puck.vy - paddle.velY;
+
+                // Проекція відносної швидкості на нормаль зіткнення
+                let velocityAlongNormal = relativeVelX * normalX + relativeVelY * normalY;
+
+                // Якщо швидкість вздовж нормалі позитивна, об'єкти вже розходяться
+                // (або шайба "проникла" глибоко і рухається на вихід).
+                // Ми не застосовуємо імпульс у цьому випадку, щоб уникнути "прилипання".
+                // Але ми все одно можемо виштовхнути шайбу, якщо вона перекривається.
+                if (velocityAlongNormal > 0) {
+                    let overlap = minDistance - distance;
+                    // Виштовхуємо шайбу, якщо є значне перекриття, щоб запобігти застряганню
+                    if (overlap > 0.1) {
+                        puck.x += normalX * (overlap + 0.1); // Невеликий додатковий поштовх
+                        puck.y += normalY * (overlap + 0.1);
+                    }
+                    return; // Вихід, не застосовуємо імпульс
+                }
+
+                // --- ВИКОРИСТАННЯ ЗМІННОГО ВІДСКОКУ ---
+                // Використовуємо поточне значення зі слайдера для основного відскоку
+                let restitution = currentPaddleRestitution;
+                // --------------------------------------
+
+                // Розрахунок величини імпульсу за формулою пружного зіткнення
+                // -(1 + коефіцієнт відновлення) * швидкість вздовж нормалі
+                // Чим більший restitution, тим сильніший відскок
+                let impulseMagnitude = -(1.0 + restitution) * velocityAlongNormal;
+
+                // Додаємо базову мінімальну силу удару, щоб навіть легкі дотики мали ефект
+                const baseHitForce = 2.5;
+                impulseMagnitude = max(impulseMagnitude, baseHitForce);
+
+                // Додаємо силу, що залежить від швидкості самої ключки
+                let paddleVelMag = sqrt(paddle.velX * paddle.velX + paddle.velY * paddle.velY);
+                let paddleSpeedFactor = constrain(paddleVelMag * 0.15, 0, 6); // Масштабуємо і обмежуємо
+                impulseMagnitude += paddleSpeedFactor;
+
+                // Початково напрямок імпульсу - вздовж нормалі
+                let impulseDirX = normalX;
+                let impulseDirY = normalY;
+
+                // --- Обробка удару краєм (Зачеплення) ---
+                // Якщо відстань більша за певний поріг (тобто удар ближче до краю ключки)
+                // і слайдер "Зачеплення" встановлений на значення > 0
+                const edgeHitThreshold = paddle.r * 0.7;
+                if (distance > edgeHitThreshold && currentEdgeBlendFactor > 0.01) {
+                     // console.log("Edge Hit Detected!");
+
+                     // --- ВІДСКОК КРАЄМ ЗАЛЕЖИТЬ ВІД ОСНОВНОГО ---
+                     // Робимо відскок краєм менш пружним, ніж центральний,
+                     // але залежним від налаштування основного відскоку.
+                     // Забезпечуємо мінімальне значення, щоб шайба не "в'язла".
+                     restitution = max(0.3, currentPaddleRestitution - 0.2); // Наприклад, на 0.2 менше, але не нижче 0.3
+                     // ------------------------------------------
+
+                     // Перераховуємо імпульс з новим (зменшеним) коефіцієнтом відновлення
+                     impulseMagnitude = -(1.0 + restitution) * velocityAlongNormal;
+                     // Застосовуємо трохи меншу базову силу для удару краєм
+                     impulseMagnitude = max(impulseMagnitude, baseHitForce * 0.8);
+                     // Додаємо швидкість ключки знову, оскільки імпульс перераховано
+                     impulseMagnitude += paddleSpeedFactor;
+
+                     // Розраховуємо вектор дотичної до точки зіткнення
+                     let tangentX = -normalY;
+                     let tangentY = normalX;
+
+                     // Змішуємо напрямок нормалі та дотичної за допомогою lerp
+                     // Фактор змішування береться зі слайдера "Зачеплення"
+                     impulseDirX = lerp(normalX, tangentX, currentEdgeBlendFactor);
+                     impulseDirY = lerp(normalY, tangentY, currentEdgeBlendFactor);
+
+                     // Нормалізуємо отриманий вектор напрямку імпульсу
+                     let impulseDirMag = sqrt(impulseDirX * impulseDirX + impulseDirY * impulseDirY);
+                     if (impulseDirMag > 0.01) { // Перевірка ділення на нуль
+                        impulseDirX /= impulseDirMag;
+                        impulseDirY /= impulseDirMag;
+                     }
+                }
+
+                // Застосування імпульсу до швидкості шайби
+                puck.vx += impulseMagnitude * impulseDirX;
+                puck.vy += impulseMagnitude * impulseDirY;
+
+                // Обмеження максимальної швидкості шайби після удару
+                let currentSpeed = sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
+                if (currentSpeed > currentMaxPuckSpeed) {
+                    puck.vx = (puck.vx / currentSpeed) * currentMaxPuckSpeed;
+                    puck.vy = (puck.vy / currentSpeed) * currentMaxPuckSpeed;
+                }
+
+                // --- Корекція позиції для уникнення застрягання ("розштовхування") ---
+                // Розраховуємо величину перекриття об'єктів
+                 let overlap = minDistance - distance;
+                 let pushFactor = 1.05; // Невеликий коефіцієнт для сильнішого розштовхування
+                 // Якщо є перекриття, виштовхуємо шайбу вздовж нормалі
+                 if (overlap > 0) {
+                     puck.x += normalX * (overlap * pushFactor + 0.1);
+                     puck.y += normalY * (overlap * pushFactor + 0.1);
+
+                     // Додаткова перевірка: якщо після виштовхування вони все ще перекриваються
+                     // (може статися при дуже великих швидкостях/малих кроках часу),
+                     // то примусово встановлюємо шайбу на межу ключки.
+                     let dx_after = puck.x - paddle.x;
+                     let dy_after = puck.y - paddle.y;
+                     let dist_after = sqrt(dx_after*dx_after + dy_after*dy_after);
+                     if (dist_after < minDistance) {
+                         puck.x = paddle.x + normalX * (minDistance + 0.05); // Ставимо трохи зовні
+                         puck.y = paddle.y + normalY * (minDistance + 0.05);
+                     }
+                 }
+
+                // Створення візуального ефекту іскор при ударі
+                // Розраховуємо кут, з якого прийшов удар (протилежний імпульсу)
+                let impactAngle = atan2(impulseDirY, impulseDirX);
+                // Створюємо іскри в точці контакту (приблизно), що летять назад
+                createSparks(puck.x - normalX * puck.r, puck.y - normalY * puck.r, impactAngle + PI);
+            }
+        }
+
+
+        // --- Перевірка голу ---
+        function checkGoal() {
+            if (!puck || goalFlash.active) return;
+            let goalScored = false; let aiScored = false;
+            let goalCenter, goalSize;
+            if (isPortrait) {
+                goalCenter = width / 2; goalSize = goalWidth; let goalLimitLeft = goalCenter - goalSize / 2; let goalLimitRight = goalCenter + goalSize / 2;
+                if (puck.y - puck.r < -puck.r * 0.5 && puck.x > goalLimitLeft && puck.x < goalLimitRight) { playerScore++; console.log("Player scores!"); goalScored = true; aiScored = false; startGoalAnimation('player'); }
+                if (puck.y + puck.r > height + puck.r*0.5 && puck.x > goalLimitLeft && puck.x < goalLimitRight) { aiScore++; console.log("AI scores!"); goalScored = true; aiScored = true; startGoalAnimation('ai'); }
+            } else { // Landscape
+                goalCenter = height / 2; goalSize = goalWidth; let goalLimitTop = goalCenter - goalSize / 2; let goalLimitBottom = goalCenter + goalSize / 2;
+                 if (puck.x - puck.r < -puck.r*0.5 && puck.y > goalLimitTop && puck.y < goalLimitBottom) { aiScore++; console.log("AI scores!"); goalScored = true; aiScored = true; startGoalAnimation('ai'); }
+                 if (puck.x + puck.r > width + puck.r*0.5 && puck.y > goalLimitTop && puck.y < goalLimitBottom) { playerScore++; console.log("Player scores!"); goalScored = true; aiScored = false; startGoalAnimation('player'); }
+            }
+            // Скидання раунду перенесено в draw() після анімації
+        }
+
+        // --- Запуск анімації спалаху воріт ---
+        function startGoalAnimation(whoScored) {
+             goalFlash.side = (whoScored === 'player') ? 'ai' : 'player';
+             goalFlash.active = true; goalFlash.timer = 0;
+             if (puck) { puck.vx = 0; puck.vy = 0; }
+        }
+
+        // --- Малювання текстури поля ---
+        function drawFieldTexture() {
+            push(); strokeWeight(0.4);
+            for (let i = 0; i < 150; i++) {
+                 let x1 = random(width); let y1 = random(height);
+                 let noiseVal = noise(x1 * 0.01, y1 * 0.01, frameCount * 0.0005); // Додамо трохи анімації шуму
+                 let angle = noiseVal * TWO_PI * 2; let len = noiseVal * 15 + 5;
+                 let x2 = x1 + cos(angle) * len; let y2 = y1 + sin(angle) * len;
+                 let alpha = map(noiseVal, 0, 1, 5, 20);
+                 stroke(200, 200, 220, alpha); line(x1, y1, x2, y2);
+             } pop();
+        }
+
+        // --- Малювання поля (з анімацією воріт) ---
+        function drawField() {
+            stroke(200, 200, 200, 100); strokeWeight(max(1.5, min(width,height)*0.005));
+            if (isPortrait) { line(0, height / 2, width, height / 2); }
+            else { line(width / 2, 0, width / 2, height); }
+            noFill(); ellipse(width / 2, height / 2, min(width,height)*0.18, min(width,height)*0.18);
+            let goalCenter, goalSize, gY1, gY2, gX1, gX2;
+            let baseGoalWeight = max(3, min(width,height)*0.01);
+            let flashGoalWeight = max(5, min(width,height)*0.015);
+            if (isPortrait) {
+                goalCenter = width / 2; goalSize = goalWidth; gX1 = goalCenter - goalSize / 2; gX2 = goalCenter + goalSize / 2;
+                // Ворота гравця (знизу)
+                let playerGoalFlashing = goalFlash.active && goalFlash.side === 'player';
+                strokeWeight(playerGoalFlashing ? flashGoalWeight : baseGoalWeight);
+                stroke(playerColor[0], playerColor[1], playerColor[2], playerGoalFlashing ? 255 : 200);
+                line(gX1, height, gX2, height);
+                // Ворота ШІ (зверху)
+                let aiGoalFlashing = goalFlash.active && goalFlash.side === 'ai';
+                strokeWeight(aiGoalFlashing ? flashGoalWeight : baseGoalWeight);
+                stroke(aiColor[0], aiColor[1], aiColor[2], aiGoalFlashing ? 255 : 200);
+                line(gX1, 0, gX2, 0);
+            } else { // Landscape
+                goalCenter = height / 2; goalSize = goalWidth; gY1 = goalCenter - goalSize / 2; gY2 = goalCenter + goalSize / 2;
+                // Ворота гравця (зліва)
+                let playerGoalFlashing = goalFlash.active && goalFlash.side === 'player';
+                strokeWeight(playerGoalFlashing ? flashGoalWeight : baseGoalWeight);
+                stroke(playerColor[0], playerColor[1], playerColor[2], playerGoalFlashing ? 255 : 200);
+                line(0, gY1, 0, gY2);
+                // Ворота ШІ (справа)
+                let aiGoalFlashing = goalFlash.active && goalFlash.side === 'ai';
+                strokeWeight(aiGoalFlashing ? flashGoalWeight : baseGoalWeight);
+                stroke(aiColor[0], aiColor[1], aiColor[2], aiGoalFlashing ? 255 : 200);
+                line(width, gY1, width, gY2);
+            }
+            noStroke(); fill(255);
+        }
+
+        // --- Малювання рахунку ---
+        function drawBackgroundScore() {
+            fill(scoreColor[0], scoreColor[1], scoreColor[2], scoreColor[3]);
+            let scoreTextSize;
+            if (isPortrait) { scoreTextSize = width * 0.35; } else { scoreTextSize = min(width, height) * 0.22; }
+            textSize(scoreTextSize);
+            strokeWeight(max(1, scoreTextSize * 0.04));
+            stroke(fieldColor[0] * 0.3, fieldColor[1] * 0.3, fieldColor[2] * 0.4, 150);
+            text(`${playerScore} - ${aiScore}`, width / 2, height / 2);
+            noStroke();
+        }
+
+
+        // --- Малювання ключок з тінями та дизайном ---
+        function drawPaddles() {
+            if (!player || !ai) return;
+            drawingContext.shadowBlur = 15; drawingContext.shadowColor = 'rgba(0, 0, 0, 0.4)';
+            drawingContext.shadowOffsetX = 3; drawingContext.shadowOffsetY = 5;
+            fill(player.color[0], player.color[1], player.color[2]); ellipse(player.x, player.y, player.r * 2);
+            fill(ai.color[0], ai.color[1], ai.color[2]); ellipse(ai.x, ai.y, ai.r * 2);
+             drawingContext.shadowBlur = 0; drawingContext.shadowOffsetX = 0; drawingContext.shadowOffsetY = 0;
+             noStroke();
+             fill(player.color[0]*0.7, player.color[1]*0.7, player.color[2]*0.8); ellipse(player.x, player.y, player.r * 1.4);
+             fill(ai.color[0]*0.8, ai.color[1]*0.7, ai.color[2]*0.7); ellipse(ai.x, ai.y, ai.r * 1.4);
+        }
+
+        // --- Малювання шайби з тінню та відблиском ---
+        function drawPuck() {
+            if (!puck) return;
+            drawingContext.shadowBlur = 8; drawingContext.shadowColor = 'rgba(0, 0, 0, 0.35)';
+            drawingContext.shadowOffsetX = 2; drawingContext.shadowOffsetY = 3;
+            fill(puck.color[0], puck.color[1], puck.color[2]); ellipse(puck.x, puck.y, puck.r * 2);
+            drawingContext.shadowBlur = 0; drawingContext.shadowOffsetX = 0; drawingContext.shadowOffsetY = 0;
+            let highlightSize = puck.r * 0.6; let highlightX = puck.x - puck.r * 0.2; let highlightY = puck.y - puck.r * 0.2;
+            fill(255, 255, 255, 100); ellipse(highlightX, highlightY, highlightSize*1.5, highlightSize*1.2);
+             stroke(0, 0, 0, 100); strokeWeight(0.5); noFill(); ellipse(puck.x, puck.y, puck.r * 2);
+             noStroke(); fill(255);
+        }
+
+         // --- Малювання сліду шайби ---
+         function drawTrail() {
+             if (!puck || puckTrail.length < 2) return;
+             noStroke();
+             for (let i = 0; i < puckTrail.length; i++) {
+                 let p = puckTrail[i];
+                 let alpha = map(i, 0, puckTrail.length - 1, 0, 60);
+                 let size = map(i, 0, puckTrail.length - 1, puck.r * 0.2, puck.r * 1.8);
+                 fill(puck.color[0], puck.color[1], puck.color[2], alpha); ellipse(p.x, p.y, size);
+             }
+         }
+
+         // --- Малювання іскор ---
+         function drawSparks() {
+             if (hitSparks.length === 0) return;
+             push(); noStroke();
+             for (let spark of hitSparks) {
+                  let alpha = map(spark.life, 0, SPARK_LIFETIME, 0, 255);
+                  fill(255, 255, 200 + random(-50, 55), alpha); ellipse(spark.x, spark.y, spark.size);
+             } pop();
+         }
+
+        // --- Скидання раунду після голу або застрягання ШІ ---
+        function resetRound(aiJustScoredOrStuck) {
+            //("Resetting round. AI scored/stuck:", aiJustScoredOrStuck, " Score:", playerScore, "-", aiScore);
+             initializeObjects(aiJustScoredOrStuck); // Скидаємо позиції та подачу
+             if (player) { isDragging = false; if (canvasElement) { canvasElement.removeClass('grabbing'); } }
+             if (ai) { ai.stuckInCornerTimer = 0; ai.escapeAttemptTimer = 0; ai.lastPuckPosInCorner = { x: -1, y: -1 }; ai.isStuckEscaping = false; }
+             puckTrail = []; hitSparks = []; goalFlash.active = false;
+             showControls(); // Показати панель на початку раунду
+        }
+
     </script>
 
 </body>
